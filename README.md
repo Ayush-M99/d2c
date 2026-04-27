@@ -4,16 +4,6 @@ Proximity-based anonymous chat for people sharing the same place.
 
 d2c drops users into a location-backed space, surfaces active nearby threads, and lets them move from discovery into live conversation with a lightweight real-time stack. The current app includes a React web client, an Express + Socket.IO gateway, Redis-backed live thread/message state, and supporting services for sessions, geospaces, and thread discovery.
 
-## App Screens
-
-### Explore
-
-![Explore screen](docs/screenshots/explore.png)
-
-### Create Thread
-
-![Create thread mobile screen](docs/screenshots/create-thread-mobile.png)
-
 ## Stack
 
 - Frontend: React, Vite, Zustand, Socket.IO client, Leaflet, Framer Motion
