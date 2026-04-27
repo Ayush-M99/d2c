@@ -1,0 +1,147 @@
+import { createHash } from 'node:crypto';
+
+// ─── Adjective Pool (500) ─────────────────────────────────────────────────
+const ADJECTIVES: string[] = [
+  'Amber', 'Ancient', 'Arctic', 'Ardent', 'Atomic', 'Autumn', 'Azure', 'Bold',
+  'Brave', 'Breezy', 'Bright', 'Brisk', 'Bronze', 'Calm', 'Candid', 'Careful',
+  'Cerulean', 'Cheerful', 'Chill', 'Clear', 'Clever', 'Cloud', 'Coastal', 'Cobalt',
+  'Cool', 'Copper', 'Cosmic', 'Cozy', 'Crimson', 'Crystal', 'Curious', 'Daring',
+  'Dawn', 'Deep', 'Deft', 'Delicate', 'Dew', 'Distant', 'Dynamic', 'Eager',
+  'Early', 'Echo', 'Electric', 'Ember', 'Epic', 'Eternal', 'Even', 'Fancy',
+  'Fast', 'Fearless', 'Fierce', 'Fiery', 'Fleet', 'Float', 'Fluent', 'Flying',
+  'Fond', 'Forest', 'Free', 'Fresh', 'Frost', 'Frosty', 'Gentle', 'Gleaming',
+  'Glowing', 'Golden', 'Grand', 'Green', 'Hazy', 'Hidden', 'High', 'Hollow',
+  'Honest', 'Hopeful', 'Humble', 'Icy', 'Idle', 'Indigo', 'Infinite', 'Inky',
+  'Inner', 'Instant', 'Jade', 'Just', 'Keen', 'Kind', 'Lapis', 'Late',
+  'Lazy', 'Lean', 'Light', 'Lively', 'Lone', 'Lucky', 'Lunar', 'Lush',
+  'Lyric', 'Mellow', 'Midnight', 'Mild', 'Misty', 'Modern', 'Moonlit', 'Mossy',
+  'Mystic', 'Narrow', 'Neat', 'Neon', 'Noble', 'Nomad', 'North', 'Novel',
+  'Oak', 'Odd', 'Open', 'Opal', 'Outer', 'Pacific', 'Pale', 'Patient',
+  'Peaceful', 'Pearl', 'Pine', 'Plain', 'Polar', 'Prism', 'Pure', 'Quick',
+  'Quiet', 'Radiant', 'Rapid', 'Raw', 'Regal', 'Remote', 'Resolute', 'Rift',
+  'River', 'Rocky', 'Rosy', 'Round', 'Royal', 'Ruby', 'Rugged', 'Rural',
+  'Rustic', 'Sandy', 'Sapphire', 'Serene', 'Shadow', 'Sharp', 'Shining', 'Silver',
+  'Simple', 'Sleek', 'Slim', 'Slow', 'Smooth', 'Solar', 'Solid', 'Solitary',
+  'Sonar', 'Sonic', 'Spare', 'Spectral', 'Spirited', 'Spring', 'Stark', 'Starlit',
+  'Steady', 'Steel', 'Still', 'Stone', 'Storm', 'Stout', 'Strange', 'Strong',
+  'Subtle', 'Summer', 'Sunny', 'Supple', 'Swift', 'Teal', 'Tender', 'Thin',
+  'Tidal', 'Timber', 'Tiny', 'Topaz', 'Tough', 'Tranquil', 'True', 'Twilight',
+  'Ultra', 'Untamed', 'Urban', 'Vast', 'Velvet', 'Verdant', 'Vibrant', 'Violet',
+  'Vivid', 'Wandering', 'Warm', 'Wild', 'Winding', 'Winter', 'Wise', 'Witty',
+  'Wooden', 'Young', 'Zeal', 'Zealous', 'Zippy', 'Able', 'Active', 'Acute',
+  'Adept', 'Aerial', 'Agile', 'Alert', 'Alive', 'Allied', 'Aloft', 'Alone',
+  'Aloof', 'Alpine', 'Amiable', 'Ample', 'Arid', 'Astute', 'Awake', 'Aware',
+  'Baked', 'Balanced', 'Basic', 'Beige', 'Benign', 'Better', 'Birch', 'Blank',
+  'Blaze', 'Blended', 'Bloom', 'Blossom', 'Blue', 'Blunt', 'Bohemian', 'Bouncy',
+  'Brief', 'Broad', 'Brushed', 'Bubbly', 'Burnished', 'Cadet', 'Canyon', 'Cedar',
+  'Centric', 'Chalk', 'Chrome', 'Cinnabar', 'Citrus', 'Civic', 'Classic', 'Cleft',
+  'Clipped', 'Close', 'Cloudy', 'Compact', 'Concise', 'Confident', 'Coral', 'Cordial',
+  'Core', 'Correct', 'Creamy', 'Crisp', 'Crooked', 'Crucial', 'Cunning', 'Cyclic',
+  'Daily', 'Dapper', 'Dark', 'Dauntless', 'Decent', 'Decisive', 'Dedicated', 'Dense',
+  'Durable', 'Dusty', 'Earnest', 'Eastern', 'Ebony', 'Elegant', 'Elevated', 'Eloquent',
+  'Emerald', 'Eminent', 'Endless', 'Energized', 'Exact', 'Expert', 'Extra', 'Faint',
+  'Famous', 'Far', 'Fertile', 'Fine', 'Firm', 'Fixed', 'Flat', 'Floral',
+  'Focal', 'Foggy', 'Formal', 'Fragrant', 'Frank', 'Frequent', 'Frugal', 'Full',
+  'Gallant', 'Genuine', 'Gifted', 'Glacial', 'Glassy', 'Global', 'Glossy', 'Graceful',
+  'Gracious', 'Gray', 'Grounded', 'Guiding', 'Hardy', 'Harmonic', 'Helpful', 'Herbal',
+  'Highland', 'Historic', 'Holistic', 'Homely', 'Horizon', 'Hushed', 'Ideal', 'Immense',
+  'Informed', 'Inspired', 'Intact', 'Integral', 'Intense', 'Intricate', 'Inventive', 'Jovial',
+  'Joyful', 'Jubilant', 'Juicy', 'Laced', 'Lanky', 'Lasting', 'Lavender', 'Lawful',
+  'Layered', 'Level', 'Linear', 'Literal', 'Lithe', 'Local', 'Logical', 'Lovable',
+  'Lovely', 'Loyal', 'Lucid', 'Luminous', 'Majestic', 'Marble', 'Measured', 'Medial',
+  'Metallic', 'Minimal', 'Mint', 'Modest', 'Molecular', 'Monastic', 'Moving', 'Muted',
+  'Natural', 'Neutral', 'Night', 'Northern', 'Noted', 'Numeric', 'Nurturing', 'Obsidian',
+  'Ocular', 'Official', 'Olive', 'Ordered', 'Organic', 'Original', 'Ornate', 'Precise',
+  'Pristine', 'Probing', 'Proper', 'Proud', 'Proven', 'Proximal', 'Pulsing', 'Radial',
+  'Ragged', 'Refined', 'Reliant', 'Resilient', 'Rhythmic', 'Rich', 'Rigid', 'Roaming',
+  'Robust', 'Rotary', 'Safe', 'Sage', 'Savvy', 'Scenic', 'Secure', 'Select',
+  'Sensible', 'Shaded', 'Silent', 'Sincere', 'Skilled', 'Smart', 'Soft', 'Southern',
+  'Spacious', 'Spry', 'Square', 'Stable', 'Static', 'Stoic', 'Strict', 'Studious',
+  'Sure', 'Sweet', 'Swirling', 'Tactful', 'Tall', 'Tangible', 'Targeted', 'Temperate',
+  'Tested', 'Thorough', 'Tidy', 'Timely', 'Tireless', 'Tonal', 'Total', 'Traced',
+  'Trained', 'Transparent', 'Tried', 'Trim', 'Trusted', 'Truthful', 'Typical', 'Unified',
+  'Unique', 'Upbeat', 'Useful', 'Valid', 'Valued', 'Variant', 'Varied', 'Vernal',
+  'Vested', 'Vigilant', 'Vocal', 'Wary', 'Watchful', 'Western', 'Wholesome', 'Willing',
+  'Woven', 'Zesty',
+];
+
+// ─── Noun Pool (500) ──────────────────────────────────────────────────────
+const NOUNS: string[] = [
+  'Albatross', 'Alder', 'Aloe', 'Alpaca', 'Anchor', 'Antler', 'Anvil', 'Apex',
+  'Arch', 'Arrowhead', 'Ash', 'Aspen', 'Atlas', 'Atoll', 'Aurora', 'Axle',
+  'Badger', 'Bamboo', 'Basalt', 'Basin', 'Beacon', 'Bear', 'Beech', 'Bell',
+  'Birch', 'Bison', 'Blizzard', 'Boulder', 'Bridge', 'Brook', 'Buck', 'Butte',
+  'Canopy', 'Canyon', 'Cape', 'Caribou', 'Cedar', 'Chasm', 'Cliff', 'Cloud',
+  'Comet', 'Condor', 'Coral', 'Crane', 'Crater', 'Creek', 'Crest', 'Current',
+  'Cypress', 'Dawn', 'Deer', 'Delta', 'Desert', 'Drift', 'Dune', 'Eagle',
+  'Eddy', 'Elk', 'Elm', 'Ember', 'Epoch', 'Falcon', 'Fern', 'Field',
+  'Finch', 'Fjord', 'Flare', 'Flash', 'Flint', 'Flood', 'Fog', 'Forest',
+  'Forge', 'Fork', 'Fox', 'Gale', 'Garnet', 'Geyser', 'Glacier', 'Glade',
+  'Glen', 'Granite', 'Grove', 'Gull', 'Gust', 'Harbor', 'Hare', 'Hawk',
+  'Hazel', 'Heath', 'Heron', 'Hill', 'Hollow', 'Horizon', 'Hummock', 'Hurricane',
+  'Ibis', 'Ice', 'Inlet', 'Island', 'Ivory', 'Ivy', 'Jaguar', 'Jasper',
+  'Jay', 'Juniper', 'Kestrel', 'Knoll', 'Lagoon', 'Lake', 'Larch', 'Lark',
+  'Laurel', 'Lava', 'Leaf', 'Ledge', 'Lemur', 'Leopard', 'Lichen', 'Lily',
+  'Limestone', 'Linden', 'Loon', 'Lynx', 'Magma', 'Maple', 'Marsh', 'Martin',
+  'Mast', 'Meadow', 'Mesa', 'Mink', 'Mist', 'Mole', 'Moon', 'Moose',
+  'Moss', 'Mountain', 'Mud', 'Narwhal', 'Nebula', 'Needle', 'Nest', 'Newt',
+  'Night', 'North', 'Oak', 'Ocean', 'Orca', 'Osprey', 'Otter', 'Outcrop',
+  'Owl', 'Panther', 'Pass', 'Peak', 'Pebble', 'Pelican', 'Pine', 'Plain',
+  'Plover', 'Pond', 'Pool', 'Porcupine', 'Prairie', 'Prism', 'Puffin', 'Pulsar',
+  'Quartz', 'Raven', 'Reef', 'Ridge', 'Rift', 'Ripple', 'River', 'Robin',
+  'Rock', 'Root', 'Rowan', 'Rushes', 'Salamander', 'Sand', 'Sandstone', 'Sapling',
+  'Sequoia', 'Shale', 'Shore', 'Sierra', 'Slate', 'Sleet', 'Snow', 'Sparrow',
+  'Spire', 'Spring', 'Spruce', 'Star', 'Starling', 'Stone', 'Storm', 'Strait',
+  'Stream', 'Stump', 'Summit', 'Sunflower', 'Surf', 'Swan', 'Sycamore', 'Tarn',
+  'Talon', 'Tern', 'Thicket', 'Thistle', 'Thorn', 'Thunder', 'Tide', 'Tiger',
+  'Timber', 'Tor', 'Torrent', 'Trail', 'Tundra', 'Tupelo', 'Turtle', 'Twilight',
+  'Upland', 'Valley', 'Vapor', 'Viper', 'Vole', 'Vulture', 'Walrus', 'Wave',
+  'Weasel', 'Willow', 'Wind', 'Wolf', 'Woodpecker', 'Wren', 'Yew', 'Acacia',
+  'Agate', 'Agave', 'Algae', 'Alligator', 'Almond', 'Anemone', 'Angelfish', 'Antelope',
+  'Ape', 'Arborvitae', 'Armadillo', 'Arrow', 'Azalea', 'Barley', 'Barnacle', 'Bass',
+  'Bat', 'Bay', 'Bayou', 'Beetle', 'Bluebell', 'Bluebird', 'Bluefish', 'Bluff',
+  'Bobcat', 'Bog', 'Bolt', 'Boreal', 'Branch', 'Bream', 'Brine', 'Brush',
+  'Bulrush', 'Bunting', 'Burrow', 'Bush', 'Bustard', 'Butterfly', 'Cairn', 'Capybara',
+  'Cardinal', 'Carp', 'Cattail', 'Cave', 'Channel', 'Char', 'Cherry', 'Chestnut',
+  'Chickadee', 'Chipmunk', 'Cirrus', 'Clam', 'Clay', 'Cod', 'Copse', 'Cormorant',
+  'Cottonwood', 'Cougar', 'Coyote', 'Crab', 'Crag', 'Crown', 'Curlew', 'Dace',
+  'Dahlia', 'Dandelion', 'Dart', 'Dipper', 'Dogwood', 'Dormouse', 'Dove', 'Drake',
+  'Dragonfly', 'Draw', 'Drizzle', 'Drop', 'Drum', 'Dusk', 'Estuary', 'Fireweed',
+  'Firth', 'Flicker', 'Fluke', 'Foothill', 'Ford', 'Frog', 'Gannet', 'Geode',
+  'Gopher', 'Gorge', 'Grackle', 'Grayling', 'Grebe', 'Grouse', 'Guillemot', 'Gulch',
+  'Hail', 'Hillside', 'Honeybee', 'Hoopoe', 'Hornet', 'Hound', 'Humus', 'Ibex',
+  'Inflow', 'Ironwood', 'Jackal', 'Jackdaw', 'Javelina', 'Junco', 'Kelp', 'Kite',
+  'Kiwi', 'Kingfisher', 'Knot', 'Koala', 'Lamprey', 'Lantern', 'Lapwing', 'Leach',
+  'Limpet', 'Linnet', 'Llama', 'Lobster', 'Locust', 'Logjam', 'Lupin', 'Mackerel',
+  'Madrona', 'Magnolia', 'Mallard', 'Manta', 'Marmot', 'Merlin', 'Millstone', 'Moorhen',
+  'Moray', 'Mule', 'Mussel', 'Naiad', 'Narrows', 'Nettle', 'Nuthatch', 'Nymph',
+  'Ocelot', 'Opossum', 'Ouzel', 'Oxbow', 'Partridge', 'Perch', 'Peregrine', 'Pheasant',
+  'Pike', 'Pintail', 'Pipit', 'Plum', 'Pochard', 'Pollock', 'Poplar', 'Porpoise',
+  'Ptarmigan', 'Puma', 'Quail', 'Rail', 'Ram', 'Razorbill', 'Redstart', 'Redwood',
+  'Reed', 'Reindeer', 'Ringtail', 'Rockfish', 'Roebuck', 'Rosehip', 'Ruff', 'Salmon',
+  'Sandpiper', 'Serin', 'Shearwater', 'Shrew', 'Skua', 'Skunk', 'Skylark', 'Sloth',
+  'Slug', 'Smolt', 'Snipe', 'Sole', 'Sorrel', 'Sprat', 'Stag', 'Starfish',
+  'Stoat', 'Stork', 'Sunfish', 'Swallow', 'Swift', 'Taiga', 'Teal', 'Thrush',
+  'Toad', 'Towhee', 'Treecreeper', 'Trout', 'Tuber', 'Tufa', 'Tulip', 'Upwelling',
+  'Vetch', 'Warbler', 'Wasp', 'Waterfall', 'Weir', 'Wheatear', 'Whimbrel', 'Whiting',
+  'Widgeon', 'Wildcat', 'Willet', 'Woodcock', 'Worm',
+];
+
+// Trim to exactly 500 entries at module load time.
+const ADJ = ADJECTIVES.slice(0, 500);
+const NON = NOUNS.slice(0, 500);
+
+/**
+ * Generate a deterministic, thread-scoped display name for a session.
+ *
+ * The name is derived from SHA-256(threadId:sessionId), so:
+ *  - Same inputs always produce the same name (deterministic).
+ *  - Different threads produce different names (non-correlatable).
+ *  - 250,000 unique combinations — far exceeds the 500-user thread cap.
+ */
+export function generateDisplayName(threadId: string, sessionId: string): string {
+  const hash = createHash('sha256').update(`${threadId}:${sessionId}`).digest('hex');
+  const adjIndex = parseInt(hash.slice(0, 8), 16) % ADJ.length;
+  const nounIndex = parseInt(hash.slice(8, 16), 16) % NON.length;
+  return `${ADJ[adjIndex]} ${NON[nounIndex]}`;
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@chatspaces/service-geospace",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --out-dir dist && tsc -p tsconfig.json --emitDeclarationOnly",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@chatspaces/shared": "workspace:*",
+    "ioredis": "^5.3.2",
+    "ngeohash": "^0.6.3",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "@types/pg": "^8.11.5",
+    "tsup": "^8.0.2",
+    "tsx": "^4.8.2",
+    "vitest": "^1.5.0"
+  }
+}

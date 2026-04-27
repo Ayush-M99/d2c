@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>d2c</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #050508; overflow: hidden; }
+    body { display: flex; align-items: center; justify-content: center; font-family: 'DM Sans', sans-serif; }
+
+    .phone-shell {
+      width: 393px; height: 852px; background: #080810; border-radius: 54px;
+      box-shadow: 0 0 0 1.5px #222240, 0 0 0 3px #0A0A14,
+        0 0 80px rgba(139,92,246,0.15), 0 0 120px rgba(255,60,172,0.06),
+        0 50px 140px rgba(0,0,0,0.85);
+      position: relative; overflow: hidden; flex-shrink: 0;
+    }
+    .dynamic-island {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 124px; height: 36px; background: #000; border-radius: 20px; z-index: 2000;
+      box-shadow: 0 0 12px rgba(0,0,0,0.8);
+    }
+    .status-bar {
+      position: absolute; top: 0; left: 0; right: 0; height: 54px;
+      display: flex; align-items: flex-end; padding: 0 28px 6px;
+      justify-content: space-between; z-index: 1999; pointer-events: none;
+    }
+    .status-time { font-size: 15px; font-weight: 600; color: #F0F0F8; font-family: 'Space Grotesk', sans-serif; }
+    .status-icons { display: flex; align-items: center; gap: 5px; }
+    .status-icons span { font-size: 12px; color: #F0F0F8; }
+    .home-indicator {
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      width: 130px; height: 5px; background: rgba(255,255,255,0.22); border-radius: 3px; z-index: 2000;
+    }
+    .app-canvas { position: absolute; top: 54px; left: 0; right: 0; bottom: 24px; overflow: hidden; }
+    #root { width: 100%; height: 100%; }
+
+    @media (max-height: 900px) { .phone-shell { transform: scale(0.86); transform-origin: center; } }
+    @media (max-height: 780px) { .phone-shell { transform: scale(0.74); } }
+
+    .viewport-label {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      font-size: 10px; color: rgba(139,92,246,0.25); font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.12em; pointer-events: none;
+    }
+
+    /* Leaflet overrides */
+    .leaflet-container { background: #0A0A16 !important; }
+    .leaflet-control-attribution { display: none !important; }
+
+    /* Pin styles */
+    .d2c-pin-wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
+    .d2c-pin-core {
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, var(--pin-color), color-mix(in srgb, var(--pin-color) 60%, black));
+      box-shadow: 0 0 14px var(--pin-color), 0 0 4px var(--pin-color);
+      border: 2px solid rgba(255,255,255,0.2); position: relative; z-index: 2;
+    }
+    .d2c-pin-hot-ring {
+      position: absolute; inset: -4px; border-radius: 50%;
+      border: 2px solid var(--pin-color); animation: d2c-pulse 1.5s ease-out infinite;
+    }
+    .d2c-pin-pulse {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1.5px solid var(--pin-color); animation: d2c-pulse 2.5s ease-out infinite;
+    }
+    .d2c-pin-pulse-2 { animation-delay: 0.8s; }
+    .d2c-pin-label {
+      margin-top: 4px; background: rgba(10,10,18,0.92); backdrop-filter: blur(10px);
+      border: 1px solid color-mix(in srgb, var(--pin-color) 30%, transparent);
+      border-radius: 20px; padding: 2px 8px;
+      display: flex; align-items: center; gap: 3px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5); white-space: nowrap;
+    }
+    .d2c-pin-emoji { font-size: 11px; }
+    .d2c-pin-count { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; color: var(--pin-color); }
+
+    /* You pin */
+    .d2c-you-pin { position: relative; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+    .d2c-you-ring {
+      position: absolute; width: 36px; height: 36px; border-radius: 50%;
+      background: #8B5CF6; opacity: 0.2; animation: d2c-breathe 2s ease-in-out infinite;
+    }
+    .d2c-you-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: linear-gradient(135deg, #8B5CF6, #FF3CAC);
+      box-shadow: 0 0 16px rgba(139,92,246,0.5);
+      border: 2.5px solid rgba(255,255,255,0.35);
+      display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;
+    }
+    .d2c-you-inner { width: 5px; height: 5px; border-radius: 50%; background: #fff; }
+
+    /* Zone labels on map */
+    .d2c-zone-label {
+      font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 700;
+      padding: 3px 10px; border-radius: 12px;
+      border: 1px solid; white-space: nowrap;
+      backdrop-filter: blur(8px); box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      letter-spacing: 0.02em;
+    }
+
+    /* Floating analytics cards on map */
+    .d2c-floating-card {
+      min-width: 130px; border-radius: 10px; padding: 8px 10px;
+      backdrop-filter: blur(16px);
+      border: 1px solid color-mix(in srgb, var(--zone-color) 30%, transparent);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .d2c-floating-card:hover {
+      transform: scale(1.04);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 20px color-mix(in srgb, var(--zone-color) 20%, transparent);
+    }
+    .d2c-fc-header { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+    .d2c-fc-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .d2c-fc-title { font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: -0.01em; }
+    .d2c-fc-stats { display: flex; gap: 10px; margin-bottom: 6px; }
+    .d2c-fc-stat { display: flex; flex-direction: column; }
+    .d2c-fc-num { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; line-height: 1; }
+    .d2c-fc-label { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: rgba(160,160,190,0.7); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+    .d2c-fc-spark { display: block; }
+
+    @keyframes d2c-fadein{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes d2c-bounce{0%,80%,100%{transform:translateY(0);opacity:0.4;}40%{transform:translateY(-5px);opacity:1;}}
+    @keyframes d2c-pulse{0%{transform:translate(-50%,-50%) scale(1);opacity:0.7;}100%{transform:translate(-50%,-50%) scale(2.8);opacity:0;}}
+    @keyframes d2c-breathe{0%,100%{transform:scale(1);opacity:0.25;}50%{transform:scale(1.5);opacity:0.1;}}
+    @keyframes d2c-slide-in{from{transform:translateX(40px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+    @keyframes d2c-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+    @keyframes d2c-spin{to{transform:rotate(360deg);}}
+    @keyframes d2c-d2c-pop{0%{transform:scale(0.8) translateY(4px);opacity:0;}100%{transform:scale(1) translateY(0);opacity:1;}}
+  </style>
+</head>
+<body>
+  <div class="phone-shell">
+    <div class="dynamic-island"></div>
+    <div class="status-bar">
+      <span class="status-time" id="status-time">9:41</span>
+      <div class="status-icons">
+        <span>●●●●</span>
+        <span style="font-size:11px">5G</span>
+        <span>🔋</span>
+      </div>
+    </div>
+    <div class="app-canvas">
+      <div id="root"></div>
+    </div>
+    <div class="home-indicator"></div>
+  </div>
+  <div class="viewport-label">d2c · proximity chat · prototype</div>
+
+  <script type="text/babel">
+  // ─────────────────────────────────────────────────────────────────────
+  // DESIGN TOKENS
+  // ─────────────────────────────────────────────────────────────────────
+  (function () {
+    const dark = {
+      '--d2c-bg': '#0A0A12', '--d2c-surface': '#111119', '--d2c-surface-2': '#1A1A26',
+      '--d2c-surface-3': '#222233', '--d2c-border': '#2A2A40', '--d2c-border-glow': 'rgba(120,90,255,0.25)',
+      '--d2c-violet': '#8B5CF6', '--d2c-violet-glow': 'rgba(139,92,246,0.35)',
+      '--d2c-cyan': '#06D6A0', '--d2c-cyan-glow': 'rgba(6,214,160,0.30)',
+      '--d2c-orange': '#FF6B35', '--d2c-orange-glow': 'rgba(255,107,53,0.30)',
+      '--d2c-pink': '#FF3CAC', '--d2c-pink-glow': 'rgba(255,60,172,0.25)',
+      '--d2c-gold': '#FFD166', '--d2c-gold-glow': 'rgba(255,209,102,0.30)',
+      '--d2c-blue': '#4CC9F0', '--d2c-blue-glow': 'rgba(76,201,240,0.25)',
+      '--d2c-red': '#EF4444', '--d2c-green': '#10B981',
+      '--d2c-text': '#F0F0F8', '--d2c-text-2': '#A0A0BE', '--d2c-text-3': '#606080',
+      '--d2c-r-sm': '8px', '--d2c-r-md': '14px', '--d2c-r-lg': '22px',
+      '--d2c-r-xl': '28px', '--d2c-r-full': '999px',
+    };
+    window.D2C = dark;
+    window.applyD2C = function () {
+      const root = document.documentElement;
+      Object.entries(dark).forEach(([k, v]) => root.style.setProperty(k, v));
+    };
+    window.applyD2C();
+  })();
+
+  // ─────────────────────────────────────────────────────────────────────
+  // UTILS
+  // ─────────────────────────────────────────────────────────────────────
+  function hashStr(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+
+  function haversineMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  // YOU pin coordinates — used for d2c calculation
+  const YOU_LAT = 12.9745, YOU_LNG = 77.6080;
+
+  function formatD2c(meters) {
+    const mins = Math.round(meters / 80); // ~80m/min walking (~5km/h)
+    if (mins < 1) return '< 1 min';
+    if (mins <= 25) return `${mins} min`;
+    return `${(meters / 1000).toFixed(1)} km`;
+  }
+
+  const VIBE_COLORS = ['#8B5CF6','#06D6A0','#FF6B35','#FF3CAC','#FFD166','#4CC9F0','#EF4444','#F97316'];
+  function vibeColor(name) { return VIBE_COLORS[hashStr(name || '') % VIBE_COLORS.length]; }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // GLOBAL STYLES
+  // ─────────────────────────────────────────────────────────────────────
+  function D2CStyles() {
+    return (
+      <style>{`
+        *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+        @keyframes d2c-fadein{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes d2c-bounce{0%,80%,100%{transform:translateY(0);opacity:0.4;}40%{transform:translateY(-5px);opacity:1;}}
+        @keyframes d2c-pulse{0%{transform:scale(1);opacity:0.7;}100%{transform:scale(2.8);opacity:0;}}
+        @keyframes d2c-breathe{0%,100%{transform:scale(1);opacity:0.4;}50%{transform:scale(1.6);opacity:0.15;}}
+        @keyframes d2c-sheet-up{from{transform:translateY(60px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+        @keyframes d2c-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+        @keyframes d2c-zone-pulse{0%,100%{opacity:0.12;}50%{opacity:0.22;}}
+        @keyframes d2c-spin{to{transform:rotate(360deg);}}
+        @keyframes d2c-d2c-pop{0%{transform:scale(0.7) translateY(4px);opacity:0;}60%{transform:scale(1.08) translateY(-1px);}100%{transform:scale(1) translateY(0);opacity:1;}}
+      `}</style>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // SHARED COMPONENTS
+  // ─────────────────────────────────────────────────────────────────────
+  function Avatar({ name = '', size = 40 }) {
+    const h = hashStr(name);
+    const hue1 = h % 360, hue2 = (h * 137) % 360;
+    const bg = `oklch(0.22 0.06 ${hue1})`;
+    const c1 = `oklch(0.70 0.22 ${hue1})`;
+    const c2 = `oklch(0.60 0.18 ${hue2})`;
+    const s = size, cx = s/2, cy = s/2, r = s*0.34;
+    const shape = h % 4;
+    const ring = (n, scale) => Array.from({length:n},(_,i)=>{
+      const a = (i/n)*Math.PI*2 - Math.PI/2;
+      return [cx+Math.cos(a)*r*scale, cy+Math.sin(a)*r*scale];
+    });
+    return (
+      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} style={{borderRadius:'50%',flexShrink:0}}>
+        <defs>
+          <radialGradient id={`ag${h}`} cx="40%" cy="35%">
+            <stop offset="0%" stopColor={c1} stopOpacity="0.9"/>
+            <stop offset="100%" stopColor={bg}/>
+          </radialGradient>
+        </defs>
+        <circle cx={cx} cy={cy} r={s/2} fill={`url(#ag${h})`}/>
+        {shape===0 && <polygon points={ring(3,1).map(p=>p.join(',')).join(' ')} fill={c1} opacity="0.85"/>}
+        {shape===1 && <polygon points={ring(6,1).map(p=>p.join(',')).join(' ')} fill={c1} opacity="0.7"/>}
+        {shape===2 && <polygon points={ring(4,1).map(p=>p.join(',')).join(' ')} fill={c2} opacity="0.8"/>}
+        {shape===3 && <><circle cx={cx} cy={cy} r={r*0.9} fill="none" stroke={c1} strokeWidth={2} opacity="0.7"/>
+          <circle cx={cx} cy={cy} r={r*0.5} fill={c2} opacity="0.6"/></>}
+        <circle cx={cx} cy={cy} r={r*0.2} fill="#fff" opacity="0.8"/>
+      </svg>
+    );
+  }
+
+  function AvatarStack({ names=[], size=28 }) {
+    const shown = names.slice(0,3);
+    const extra = names.length - shown.length;
+    return (
+      <div style={{display:'flex',alignItems:'center'}}>
+        {shown.map((n,i)=>(
+          <div key={i} style={{marginLeft:i?-size*0.3:0,zIndex:shown.length-i,
+            borderRadius:'50%',border:'2px solid var(--d2c-surface)'}}>
+            <Avatar name={n} size={size}/>
+          </div>
+        ))}
+        {extra>0 && <div style={{marginLeft:-size*0.3,width:size,height:size,borderRadius:'50%',
+          background:'var(--d2c-surface-3)',border:'2px solid var(--d2c-surface)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          fontSize:size*0.32,color:'var(--d2c-text-2)',fontWeight:700}}>+{extra}</div>}
+      </div>
+    );
+  }
+
+  function Pill({ label, color, glow, small }) {
+    const c = color || 'var(--d2c-violet)';
+    return (
+      <span style={{display:'inline-flex',alignItems:'center',gap:3,
+        background:`${c}18`,color:c,border:`1px solid ${c}44`,
+        borderRadius:'var(--d2c-r-full)',padding:small?'1px 7px':'3px 10px',
+        fontSize:small?10:11,fontWeight:600,letterSpacing:'0.02em',
+        boxShadow:glow?`0 0 12px ${c}22`:'none',
+        whiteSpace:'nowrap',flexShrink:0}}>
+        {label}
+      </span>
+    );
+  }
+
+  function Btn({ children, variant='primary', onClick, disabled, style:extra }) {
+    const [p, setP] = React.useState(false);
+    const v = {
+      primary: {bg:'var(--d2c-violet)',c:'#fff',shadow:'0 0 24px var(--d2c-violet-glow)'},
+      cyan: {bg:'var(--d2c-cyan)',c:'#0A0A12',shadow:'0 0 24px var(--d2c-cyan-glow)'},
+      ghost: {bg:'transparent',c:'var(--d2c-text-2)',border:'1.5px solid var(--d2c-border)',shadow:'none'},
+      gold: {bg:'linear-gradient(135deg,#FFD166,#FF6B35)',c:'#0A0A12',shadow:'0 0 30px rgba(255,209,102,0.3)'},
+    }[variant] || {};
+    return (
+      <button onClick={onClick} disabled={disabled}
+        onPointerDown={()=>setP(true)} onPointerUp={()=>setP(false)} onPointerLeave={()=>setP(false)}
+        style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,
+          height:44,padding:'0 22px',fontSize:14,fontWeight:700,fontFamily:'inherit',
+          borderRadius:'var(--d2c-r-full)',background:v.bg,color:v.c,
+          border:v.border||'none',cursor:disabled?'not-allowed':'pointer',
+          opacity:disabled?0.4:1,boxShadow:p?'none':v.shadow,
+          transform:p?'scale(0.96)':'scale(1)',transition:'all 0.15s',
+          letterSpacing:'0.01em',...extra}}>
+        {children}
+      </button>
+    );
+  }
+
+  function TypingDots({ name }) {
+    return (
+      <div style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
+        <div style={{display:'flex',gap:3,background:'var(--d2c-surface)',
+          padding:'8px 14px',borderRadius:'14px 14px 14px 4px',border:'1px solid var(--d2c-border)'}}>
+          {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:'50%',
+            background:'var(--d2c-violet)',animation:'d2c-bounce 1.2s ease infinite',
+            animationDelay:`${i*0.18}s`}}/>)}
+        </div>
+        <span style={{fontSize:11,color:'var(--d2c-text-3)',fontStyle:'italic'}}>{name} typing</span>
+      </div>
+    );
+  }
+
+  function Toast2({ message, type='info', visible }) {
+    const c = {info:'var(--d2c-violet)',success:'var(--d2c-cyan)',error:'var(--d2c-red)',warn:'var(--d2c-orange)'}[type];
+    return (
+      <div style={{position:'absolute',top:12,left:'50%',
+        transform:`translateX(-50%) translateY(${visible?0:-60}px)`,
+        opacity:visible?1:0,transition:'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+        background:'var(--d2c-surface-2)',border:`1px solid ${c}`,
+        borderRadius:'var(--d2c-r-full)',padding:'8px 18px',
+        display:'flex',alignItems:'center',gap:8,
+        color:'var(--d2c-text)',fontSize:13,fontWeight:600,
+        backdropFilter:'blur(16px)',zIndex:999,whiteSpace:'nowrap',
+        boxShadow:`0 8px 32px rgba(0,0,0,0.4), 0 0 20px ${c}22`}}>
+        {message}
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // MAP DATA
+  // ─────────────────────────────────────────────────────────────────────
+  const ZONE_COLORS = {
+    food:'#FF6B35', nightlife:'#FF3CAC', culture:'#8B5CF6',
+    outdoors:'#06D6A0', transit:'#4CC9F0',
+  };
+
+  const ZONES_META = [
+    { id:'food', label:'Food & Drink', emoji:'🍽' },
+    { id:'nightlife', label:'Nightlife', emoji:'🌃' },
+    { id:'culture', label:'Arts & Culture', emoji:'🎨' },
+    { id:'outdoors', label:'Parks & Outdoors', emoji:'🌿' },
+    { id:'transit', label:'Transit & Local', emoji:'🚌' },
+  ];
+
+  const D2C_THREADS = [
+    { id:1, title:'Blue Tokai — anyone here?', tags:['cafe','coffee'], active:14, ago:'now', participants:['BraveOtter','QuietWolf','NeonFox','StormCrow','GlassHawk'], lastMessage:'got the corner table, filter coffee is crazy today', emoji:'☕', zone:'food', lat:12.9730, lng:77.6060 },
+    { id:2, title:'FC vs MI watch party', tags:['sports','live'], active:32, ago:'1m', participants:['WildLynx','SaltRidge','IronDawn'], lastMessage:'pub on MG road, big screen, no cover', emoji:'⚽', zone:'nightlife', lat:12.9750, lng:77.6190 },
+    { id:3, title:'Monsoon walk from Cubbon', tags:['outdoors','walk'], active:8, ago:'3m', participants:['MistPine','DuskBird'], lastMessage:'drizzling but honestly perfect for it', emoji:'🌧', zone:'outdoors', lat:12.9763, lng:77.5929 },
+    { id:4, title:'Late night ramen — Shivaji', tags:['food','latenight'], active:11, ago:'2m', participants:['RedCoral','SandPeak','NightOwl'], lastMessage:'spot near the bus stand still open', emoji:'🍜', zone:'food', lat:12.9710, lng:77.6050 },
+    { id:5, title:'Power cut Indiranagar?', tags:['local','help'], active:22, ago:'4m', participants:['CalmReed','StoneLeaf','AshWren','TideCliff'], lastMessage:'yep whole sector 5 is out again', emoji:'💡', zone:'transit', lat:12.9784, lng:77.6408 },
+    { id:6, title:'Open mic at Fandom tonight', tags:['music','culture'], active:19, ago:'5m', participants:['VoidPulse','SilkRain','NightBloom'], lastMessage:'starts at 9, get there early for seats', emoji:'🎤', zone:'culture', lat:12.9680, lng:77.5980 },
+    { id:7, title:'Pottery class — Commercial St', tags:['art','workshop'], active:5, ago:'8m', participants:['ClayHand','GoldSpark'], lastMessage:'₹500 for 2 hours, really therapeutic', emoji:'🏺', zone:'culture', lat:12.9700, lng:77.6000 },
+  ];
+
+  const MAP_ZONES = [
+    { id:'food', label:'Gourmet Trail', color:'#FF6B35', center:[12.9725,77.6055],
+      polygon:[[12.9745,77.6020],[12.9755,77.6070],[12.9735,77.6090],[12.9710,77.6075],[12.9705,77.6030]],
+      stats:{ threads:3, active:36, peak:'8pm', topTags:['cafe','ramen','street-food'],
+        hourly:[2,1,1,0,0,1,3,5,8,12,15,18,22,28,32,36,34,30,38,42,35,22,14,6] }},
+    { id:'nightlife', label:'Nightlife Strip', color:'#FF3CAC', center:[12.9755,77.6195],
+      polygon:[[12.9775,77.6165],[12.9780,77.6220],[12.9755,77.6235],[12.9735,77.6215],[12.9740,77.6170]],
+      stats:{ threads:2, active:51, peak:'11pm', topTags:['pub','live-music','drinks'],
+        hourly:[1,0,0,0,0,0,0,1,2,3,5,8,10,12,15,20,24,30,38,45,51,48,32,12] }},
+    { id:'culture', label:'Arts Hub', color:'#8B5CF6', center:[12.9690,77.5985],
+      polygon:[[12.9715,77.5955],[12.9720,77.6010],[12.9700,77.6025],[12.9670,77.6005],[12.9665,77.5960]],
+      stats:{ threads:2, active:24, peak:'6pm', topTags:['open-mic','pottery','gallery'],
+        hourly:[0,0,0,0,0,0,1,2,4,8,12,16,18,20,22,24,22,20,18,14,10,6,3,1] }},
+    { id:'outdoors', label:'Cubbon Green', color:'#06D6A0', center:[12.9763,77.5929],
+      polygon:[[12.9785,77.5900],[12.9790,77.5955],[12.9770,77.5970],[12.9745,77.5955],[12.9740,77.5905]],
+      stats:{ threads:1, active:8, peak:'7am', topTags:['walk','run','monsoon'],
+        hourly:[2,1,0,0,0,4,8,12,10,8,6,4,3,3,4,5,6,8,7,5,3,2,2,2] }},
+    { id:'transit', label:'Transit Core', color:'#4CC9F0', center:[12.9784,77.6408],
+      polygon:[[12.9805,77.6380],[12.9810,77.6435],[12.9790,77.6445],[12.9765,77.6430],[12.9760,77.6385]],
+      stats:{ threads:1, active:22, peak:'9am', topTags:['power-cut','traffic','metro'],
+        hourly:[3,2,1,1,0,2,8,18,22,20,16,14,12,10,12,15,18,20,22,18,12,8,5,3] }},
+  ];
+
+  // ─────────────────────────────────────────────────────────────────────
+  // SPARKLINE / CHART COMPONENTS
+  // ─────────────────────────────────────────────────────────────────────
+  function Sparkline({ data, color, width=100, height=28, filled=true }) {
+    const max = Math.max(...data, 1);
+    const pts = data.map((v, i) => `${(i / (data.length - 1)) * width},${height - (v / max) * (height - 4)}`);
+    const line = pts.join(' ');
+    const fillPts = `0,${height} ${line} ${width},${height}`;
+    const h = new Date().getHours();
+    const x = (h / 23) * width;
+    const y = height - (data[h] / max) * (height - 4);
+    return (
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{display:'block'}}>
+        {filled && <polygon points={fillPts} fill={`${color}20`} />}
+        <polyline points={line} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={x} cy={y} r={3} fill={color} stroke="#fff" strokeWidth={1} />
+      </svg>
+    );
+  }
+
+  function MiniBarChart({ labels, values, colors, width=120, height=40 }) {
+    const max = Math.max(...values, 1);
+    const bw = (width - (values.length - 1) * 3) / values.length;
+    return (
+      <svg width={width} height={height + 14} viewBox={`0 0 ${width} ${height + 14}`}>
+        {values.map((v, i) => {
+          const bh = (v / max) * height;
+          const x = i * (bw + 3);
+          return (
+            <g key={i}>
+              <rect x={x} y={height - bh} width={bw} height={bh} rx={2} fill={colors[i] || '#8B5CF6'} opacity={0.85} />
+              <text x={x + bw/2} y={height + 11} textAnchor="middle" fontSize={7} fill="rgba(255,255,255,0.5)" fontFamily="'JetBrains Mono',monospace">{labels[i]}</text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  }
+
+  function HeatmapGrid({ data, width=100, height=50 }) {
+    const rows = data.length, cols = data[0].length;
+    const cw = width / cols, ch = height / rows;
+    return (
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        {data.map((row, r) => row.map((v, c) => (
+          <rect key={`${r}-${c}`} x={c * cw} y={r * ch} width={cw - 0.5} height={ch - 0.5} rx={1}
+            fill={v > 0.7 ? '#EF4444' : v > 0.4 ? '#FF6B35' : v > 0.2 ? '#FFD166' : '#06D6A022'}
+            opacity={0.3 + v * 0.7} />
+        )))}
+      </svg>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // AGGREGATE STATS BAR
+  // ─────────────────────────────────────────────────────────────────────
+  function AggregateStats({ zones, currentHour, darkMode }) {
+    const totalActive = zones.reduce((a, z) => a + z.stats.hourly[currentHour], 0);
+    const totalThreads = zones.reduce((a, z) => a + z.stats.threads, 0);
+    const hottest = zones.reduce((a, z) => z.stats.hourly[currentHour] > a.stats.hourly[currentHour] ? z : a, zones[0]);
+    const border = darkMode ? 'rgba(42,42,64,0.5)' : 'rgba(0,0,0,0.06)';
+    const text3 = darkMode ? '#606080' : '#999';
+    return (
+      <div style={{ display:'flex', gap:8, padding:'0 2px', marginBottom:10 }}>
+        {[
+          { v: totalActive, l: 'chatting', c: 'var(--d2c-cyan)', icon: '💬' },
+          { v: totalThreads, l: 'threads', c: 'var(--d2c-violet)', icon: '🧵' },
+          { v: hottest.label.split(' ')[0], l: 'hottest', c: hottest.color, icon: '🔥' },
+        ].map((s, i) => (
+          <div key={i} style={{ flex:1, background: darkMode ? 'var(--d2c-surface)' : '#fff',
+            borderRadius:10, padding:'8px 10px', border:`1px solid ${border}` }}>
+            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+              <span style={{ fontSize:12 }}>{s.icon}</span>
+              <span style={{ fontSize:16, fontWeight:700, color:s.c, fontFamily:"'Space Grotesk',sans-serif" }}>{s.v}</span>
+            </div>
+            <div style={{ fontSize:8, color:text3, fontFamily:"'JetBrains Mono',monospace",
+              marginTop:2, letterSpacing:'0.06em', textTransform:'uppercase' }}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // ZONE POPOVER
+  // ─────────────────────────────────────────────────────────────────────
+  function ZonePopover({ zone, onClose, darkMode }) {
+    const bg = darkMode ? 'rgba(10,10,20,0.96)' : 'rgba(255,255,255,0.98)';
+    const text = darkMode ? '#F0F0F8' : '#111';
+    const text2 = darkMode ? '#A0A0BE' : '#555';
+    const text3 = darkMode ? '#606080' : '#999';
+    const surfBg = darkMode ? 'rgba(20,20,35,0.8)' : '#F5F5F8';
+    const heatData = Array.from({ length: 7 }, () =>
+      zone.stats.hourly.map(v => Math.min(1, (v / Math.max(...zone.stats.hourly)) * (0.8 + Math.random() * 0.4)))
+    );
+    const categories = [
+      { label: 'Chat', value: Math.round(zone.stats.active * 0.45), color: zone.color },
+      { label: 'Poll', value: Math.round(zone.stats.active * 0.25), color: '#FFD166' },
+      { label: 'Q&A', value: Math.round(zone.stats.active * 0.20), color: '#4CC9F0' },
+      { label: 'Event', value: Math.round(zone.stats.active * 0.10), color: '#06D6A0' },
+    ];
+    return (
+      <div style={{ position:'absolute', inset:0, zIndex:2000,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        background:'rgba(0,0,0,0.5)', backdropFilter:'blur(8px)' }} onClick={onClose}>
+        <div onClick={e=>e.stopPropagation()} style={{ background:bg, backdropFilter:'blur(24px)',
+          border:`1px solid ${zone.color}44`, borderRadius:20, padding:20, width:'92%', maxWidth:340,
+          boxShadow:`0 24px 80px rgba(0,0,0,0.6), 0 0 40px ${zone.color}15` }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <div style={{ width:12, height:12, borderRadius:'50%', background:zone.color, boxShadow:`0 0 12px ${zone.color}` }}/>
+              <span style={{ fontSize:18, fontWeight:700, color:text, fontFamily:"'Space Grotesk',sans-serif" }}>{zone.label}</span>
+            </div>
+            <button onClick={onClose} style={{ background:'none', border:'none', color:text3, fontSize:20, cursor:'pointer', padding:4, fontFamily:'inherit' }}>×</button>
+          </div>
+          <div style={{ display:'flex', gap:16, marginBottom:16 }}>
+            {[{v:zone.stats.active,l:'active now',c:zone.color},{v:zone.stats.threads,l:'threads',c:text},{v:zone.stats.peak,l:'peak hour',c:'#FFD166'}].map((s,i)=>(
+              <div key={i} style={{ flex:1, background:surfBg, borderRadius:10, padding:'10px 12px',
+                border:`1px solid ${darkMode?'rgba(42,42,64,0.5)':'rgba(0,0,0,0.05)'}` }}>
+                <div style={{ fontSize:22, fontWeight:700, color:s.c, lineHeight:1, fontFamily:"'Space Grotesk',sans-serif" }}>{s.v}</div>
+                <div style={{ fontSize:9, color:text3, fontFamily:"'JetBrains Mono',monospace", marginTop:4, letterSpacing:'0.06em', textTransform:'uppercase' }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:10, fontWeight:600, color:text2, marginBottom:6, fontFamily:"'Space Grotesk',sans-serif", letterSpacing:'0.04em', textTransform:'uppercase' }}>Activity · 24h</div>
+            <div style={{ background:surfBg, borderRadius:10, padding:10, border:`1px solid ${darkMode?'rgba(42,42,64,0.5)':'rgba(0,0,0,0.05)'}` }}>
+              <Sparkline data={zone.stats.hourly} color={zone.color} width={280} height={40} />
+              <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
+                {['12a','6a','12p','6p','12a'].map((l,i)=>(
+                  <span key={i} style={{ fontSize:8, color:text3, fontFamily:"'JetBrains Mono',monospace" }}>{l}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:10, fontWeight:600, color:text2, marginBottom:6, fontFamily:"'Space Grotesk',sans-serif", letterSpacing:'0.04em', textTransform:'uppercase' }}>Weekly Heatmap</div>
+            <div style={{ background:surfBg, borderRadius:10, padding:10, border:`1px solid ${darkMode?'rgba(42,42,64,0.5)':'rgba(0,0,0,0.05)'}` }}>
+              <HeatmapGrid data={heatData} width={280} height={42} />
+              <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
+                {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d,i)=>(
+                  <span key={i} style={{ fontSize:7, color:text3, fontFamily:"'JetBrains Mono',monospace", width:40, textAlign:'center' }}>{d}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize:10, fontWeight:600, color:text2, marginBottom:6, fontFamily:"'Space Grotesk',sans-serif", letterSpacing:'0.04em', textTransform:'uppercase' }}>Thread Types</div>
+            <div style={{ background:surfBg, borderRadius:10, padding:10, border:`1px solid ${darkMode?'rgba(42,42,64,0.5)':'rgba(0,0,0,0.05)'}` }}>
+              <MiniBarChart labels={categories.map(c=>c.label)} values={categories.map(c=>c.value)} colors={categories.map(c=>c.color)} width={280} height={36} />
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:5, marginTop:12, flexWrap:'wrap' }}>
+            {zone.stats.topTags.map(t=>(
+              <span key={t} style={{ fontSize:10, padding:'3px 8px', borderRadius:12,
+                background:`${zone.color}15`, color:zone.color, fontWeight:600,
+                fontFamily:"'JetBrains Mono',monospace", border:`1px solid ${zone.color}33` }}>#{t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // TIME SLIDER
+  // ─────────────────────────────────────────────────────────────────────
+  function TimeSlider({ value, onChange, darkMode }) {
+    const bg = darkMode ? 'rgba(10,10,20,0.92)' : 'rgba(255,255,255,0.95)';
+    const border = darkMode ? 'rgba(42,42,64,0.6)' : 'rgba(0,0,0,0.08)';
+    const hourLabel = h => {
+      if (h === 0) return '12a'; if (h < 12) return `${h}a`;
+      if (h === 12) return '12p'; return `${h - 12}p`;
+    };
+    return (
+      <div style={{ position:'absolute', bottom:128, left:14, right:60, zIndex:1000,
+        background:bg, backdropFilter:'blur(16px)', border:`1px solid ${border}`,
+        borderRadius:14, padding:'8px 14px', boxShadow:'0 4px 20px rgba(0,0,0,0.3)' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+          <span style={{ fontSize:9, fontWeight:600, color:darkMode?'#A0A0BE':'#666',
+            fontFamily:"'Space Grotesk',sans-serif", letterSpacing:'0.06em', textTransform:'uppercase' }}>Time</span>
+          <span style={{ fontSize:12, fontWeight:700, color:'var(--d2c-violet)', fontFamily:"'JetBrains Mono',monospace" }}>{hourLabel(value)}</span>
+        </div>
+        <input type="range" min={0} max={23} step={1} value={value} onChange={e=>onChange(+e.target.value)}
+          style={{ width:'100%', accentColor:'var(--d2c-violet)', height:4, cursor:'pointer' }} />
+        <div style={{ display:'flex', justifyContent:'space-between', marginTop:2 }}>
+          {['12a','6a','12p','6p','12a'].map((l,i)=>(
+            <span key={i} style={{ fontSize:7, color:darkMode?'#606080':'#bbb', fontFamily:"'JetBrains Mono',monospace" }}>{l}</span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // LAYER CONTROL
+  // ─────────────────────────────────────────────────────────────────────
+  function LayerControl({ layers, setLayers, darkMode, showAnalytics, setShowAnalytics }) {
+    const [expanded, setExpanded] = React.useState(false);
+    const bg = darkMode ? 'rgba(10,10,18,0.92)' : 'rgba(255,255,255,0.95)';
+    const border = darkMode ? 'rgba(42,42,64,0.8)' : 'rgba(0,0,0,0.1)';
+    const textCol = darkMode ? 'var(--d2c-text)' : '#333';
+    const text3 = darkMode ? 'var(--d2c-text-3)' : '#888';
+    return (
+      <div style={{ position:'absolute', top:62, left:10, zIndex:1000, display:'flex', flexDirection:'column', gap:4 }}>
+        <button onClick={() => setExpanded(!expanded)}
+          style={{ display:'flex', alignItems:'center', gap:6, background:bg, backdropFilter:'blur(12px)',
+            border:`1px solid ${border}`, borderRadius:'var(--d2c-r-full)', padding:'7px 12px',
+            cursor:'pointer', boxShadow:'0 2px 12px rgba(0,0,0,0.2)', fontFamily:'inherit',
+            color:textCol, fontSize:12, fontWeight:600 }}>
+          <span style={{fontSize:14}}>🗺</span>
+          <span style={{fontFamily:"'Space Grotesk',sans-serif"}}>Layers</span>
+          <span style={{fontSize:10, transform:expanded?'rotate(180deg)':'rotate(0)', transition:'transform 0.2s'}}>▾</span>
+        </button>
+        {expanded && (
+          <>
+            <button onClick={() => setShowAnalytics(!showAnalytics)}
+              style={{ display:'flex', alignItems:'center', gap:6,
+                background: showAnalytics ? 'rgba(139,92,246,0.15)' : bg,
+                backdropFilter:'blur(12px)',
+                border:`1px solid ${showAnalytics ? 'rgba(139,92,246,0.5)' : border}`,
+                borderRadius:'var(--d2c-r-full)', padding:'5px 10px',
+                cursor:'pointer', transition:'all 0.2s', fontFamily:'inherit' }}>
+              <span style={{fontSize:12}}>📊</span>
+              <span style={{ fontSize:10, fontWeight:600, color:showAnalytics?'#8B5CF6':text3,
+                fontFamily:"'Space Grotesk',sans-serif" }}>Analytics</span>
+            </button>
+            {ZONES_META.map(z => {
+              const active = layers[z.id];
+              const color = ZONE_COLORS[z.id];
+              return (
+                <button key={z.id} onClick={() => setLayers(l => ({ ...l, [z.id]: !l[z.id] }))}
+                  style={{ display:'flex', alignItems:'center', gap:6,
+                    background: active ? `${color}${darkMode?'18':'12'}` : bg,
+                    backdropFilter:'blur(12px)',
+                    border:`1px solid ${active ? color + '55' : border}`,
+                    borderRadius:'var(--d2c-r-full)', padding:'5px 10px',
+                    cursor:'pointer', transition:'all 0.2s', fontFamily:'inherit' }}>
+                  <span style={{fontSize:12}}>{z.emoji}</span>
+                  <span style={{ fontSize:10, fontWeight:600, color:active?color:text3,
+                    fontFamily:"'Space Grotesk',sans-serif" }}>{z.label}</span>
+                  <div style={{ width:8, height:8, borderRadius:'50%',
+                    background: active ? color : (darkMode?'var(--d2c-border)':'#ccc'),
+                    boxShadow: active ? `0 0 6px ${color}` : 'none', transition:'all 0.2s' }} />
+                </button>
+              );
+            })}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // ANALYTICS MAP (Leaflet)
+  // ─────────────────────────────────────────────────────────────────────
+  function AnalyticsMap({ darkMode, onThreadSelect, layers, currentHour, onZoneTap }) {
+    const mapContainerRef = React.useRef(null);
+    const mapRef = React.useRef(null);
+    const tileRef = React.useRef(null);
+    const markersRef = React.useRef([]);
+    const zonesRef = React.useRef([]);
+    const cardsRef = React.useRef([]);
+
+    const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    const LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    const CENTER = [12.9750, 77.6100];
+    const ZOOM = 14;
+    const YOU = [YOU_LAT, YOU_LNG];
+
+    React.useEffect(() => {
+      if (!window.L || mapRef.current) return;
+      const map = window.L.map(mapContainerRef.current, {
+        center: CENTER, zoom: ZOOM, zoomControl: false, attributionControl: false,
+      });
+      mapRef.current = map;
+      tileRef.current = window.L.tileLayer(darkMode ? DARK_TILES : LIGHT_TILES, {
+        maxZoom: 19, subdomains: 'abcd',
+      }).addTo(map);
+      const youIcon = window.L.divIcon({
+        className: '',
+        html: '<div class="d2c-you-pin"><div class="d2c-you-ring"></div><div class="d2c-you-dot"><div class="d2c-you-inner"></div></div></div>',
+        iconSize: [40, 40], iconAnchor: [20, 20],
+      });
+      window.L.marker(YOU, { icon: youIcon, interactive: false }).addTo(map);
+      return () => { map.remove(); mapRef.current = null; };
+    }, []);
+
+    React.useEffect(() => {
+      if (tileRef.current) tileRef.current.setUrl(darkMode ? DARK_TILES : LIGHT_TILES);
+    }, [darkMode]);
+
+    React.useEffect(() => {
+      if (!mapRef.current) return;
+      zonesRef.current.forEach(z => z.remove());
+      zonesRef.current = [];
+      MAP_ZONES.forEach(zone => {
+        if (!layers[zone.id]) return;
+        const poly = window.L.polygon(zone.polygon, {
+          color: zone.color, weight: 2, opacity: 0.6,
+          fillColor: zone.color, fillOpacity: darkMode ? 0.15 : 0.10,
+          dashArray: '6,4',
+        }).addTo(mapRef.current);
+        poly.on('click', () => onZoneTap(zone));
+        const labelIcon = window.L.divIcon({
+          className: '',
+          html: `<div class="d2c-zone-label" style="background:${darkMode?'rgba(10,10,20,0.85)':'rgba(255,255,255,0.90)'};color:${zone.color};border-color:${zone.color}44">${zone.label}</div>`,
+          iconSize: [0, 0],
+        });
+        const label = window.L.marker(zone.center, { icon: labelIcon, interactive: false }).addTo(mapRef.current);
+        zonesRef.current.push(poly, label);
+      });
+    }, [layers, darkMode, onZoneTap]);
+
+    React.useEffect(() => {
+      if (!mapRef.current) return;
+      markersRef.current.forEach(m => m.remove());
+      markersRef.current = [];
+      const visible = D2C_THREADS.filter(t => layers[t.zone]);
+      visible.forEach(thread => {
+        const color = ZONE_COLORS[thread.zone] || '#8B5CF6';
+        const isHot = thread.active > 20;
+        const size = isHot ? 44 : 38;
+        const zone = MAP_ZONES.find(z => z.id === thread.zone);
+        const hourFactor = zone ? zone.stats.hourly[currentHour] / Math.max(...zone.stats.hourly, 1) : 1;
+        const scaledActive = Math.max(1, Math.round(thread.active * hourFactor));
+        const html = `<div class="d2c-pin-wrap" style="--pin-color:${color}">
+          <div class="d2c-pin-pulse"></div><div class="d2c-pin-pulse d2c-pin-pulse-2"></div>
+          <div class="d2c-pin-core" style="width:${isHot?16:12}px;height:${isHot?16:12}px;opacity:${0.4+hourFactor*0.6}">
+            ${isHot?'<div class="d2c-pin-hot-ring"></div>':''}
+          </div>
+          <div class="d2c-pin-label"><span class="d2c-pin-emoji">${thread.emoji}</span><span class="d2c-pin-count">${scaledActive}</span></div>
+        </div>`;
+        const icon = window.L.divIcon({ className: '', html, iconSize: [size, size + 24], iconAnchor: [size / 2, size / 2] });
+        const marker = window.L.marker([thread.lat, thread.lng], { icon }).addTo(mapRef.current);
+        marker.on('click', () => onThreadSelect(thread));
+        markersRef.current.push(marker);
+      });
+    }, [layers, currentHour, onThreadSelect]);
+
+    React.useEffect(() => {
+      if (!mapRef.current) return;
+      cardsRef.current.forEach(c => c.remove());
+      cardsRef.current = [];
+      MAP_ZONES.forEach(zone => {
+        if (!layers[zone.id]) return;
+        const cardLat = zone.center[0] + 0.0018, cardLng = zone.center[1] + 0.003;
+        const hourFactor = zone.stats.hourly[currentHour] / Math.max(...zone.stats.hourly, 1);
+        const scaledActive = Math.max(1, Math.round(zone.stats.active * hourFactor));
+        const html = `<div class="d2c-floating-card" style="--zone-color:${zone.color};background:${darkMode?'rgba(10,10,20,0.92)':'rgba(255,255,255,0.95)'}">
+          <div class="d2c-fc-header">
+            <div class="d2c-fc-dot" style="background:${zone.color};box-shadow:0 0 8px ${zone.color}"></div>
+            <span class="d2c-fc-title" style="color:${zone.color}">${zone.label}</span>
+          </div>
+          <div class="d2c-fc-stats">
+            <div class="d2c-fc-stat"><span class="d2c-fc-num" style="color:${darkMode?'#F0F0F8':'#111'}">${scaledActive}</span><span class="d2c-fc-label">active</span></div>
+            <div class="d2c-fc-stat"><span class="d2c-fc-num" style="color:${darkMode?'#F0F0F8':'#111'}">${zone.stats.threads}</span><span class="d2c-fc-label">threads</span></div>
+          </div>
+          <svg class="d2c-fc-spark" width="110" height="20" viewBox="0 0 110 20">
+            <polyline points="${zone.stats.hourly.map((v,i)=>`${(i/23)*110},${20-(v/Math.max(...zone.stats.hourly))*16}`).join(' ')}" fill="none" stroke="${zone.color}" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="${(currentHour/23)*110}" cy="${20-(zone.stats.hourly[currentHour]/Math.max(...zone.stats.hourly))*16}" r="2.5" fill="${zone.color}" stroke="white" stroke-width="0.8"/>
+          </svg>
+        </div>`;
+        const cardIcon = window.L.divIcon({ className: '', html, iconSize: [0, 0] });
+        const cardMarker = window.L.marker([cardLat, cardLng], { icon: cardIcon, interactive: true }).addTo(mapRef.current);
+        cardMarker.on('click', () => onZoneTap(zone));
+        cardsRef.current.push(cardMarker);
+      });
+    }, [layers, darkMode, currentHour, onZoneTap]);
+
+    const recenter = () => { if (mapRef.current) mapRef.current.flyTo(CENTER, ZOOM, { duration: 0.8 }); };
+
+    return (
+      <div style={{ position:'absolute', inset:0 }}>
+        <div ref={mapContainerRef} style={{ width:'100%', height:'100%' }}></div>
+        <button onClick={recenter}
+          style={{ position:'absolute', bottom:180, right:14, zIndex:1000,
+            width:40, height:40, borderRadius:'50%',
+            background: darkMode ? 'rgba(10,10,18,0.92)' : 'rgba(255,255,255,0.95)',
+            backdropFilter:'blur(12px)',
+            border:`1px solid ${darkMode?'rgba(42,42,64,0.8)':'rgba(0,0,0,0.1)'}`,
+            color: darkMode ? 'var(--d2c-text)' : '#333',
+            fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+            boxShadow:'0 2px 12px rgba(0,0,0,0.3)', fontFamily:'inherit' }}>⌖</button>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // THREAD CARD
+  // ─────────────────────────────────────────────────────────────────────
+  function ThreadCard({ thread, onClick, index=0, darkMode }) {
+    const [hov, setHov] = React.useState(false);
+    const zoneColor = ZONE_COLORS[thread.zone] || '#8B5CF6';
+    const isHot = thread.active > 20;
+    const cardBg = darkMode ? (hov ? 'var(--d2c-surface-2)' : 'var(--d2c-surface)') : (hov ? '#F0F0F5' : '#fff');
+    const cardBorder = darkMode ? 'var(--d2c-border)' : 'rgba(0,0,0,0.06)';
+    const textCol = darkMode ? 'var(--d2c-text)' : '#111';
+    const text2Col = darkMode ? 'var(--d2c-text-2)' : '#555';
+    const text3Col = darkMode ? 'var(--d2c-text-3)' : '#999';
+    return (
+      <div onClick={onClick}
+        onPointerEnter={() => setHov(true)} onPointerLeave={() => setHov(false)}
+        style={{ background:cardBg, border:`1px solid ${hov?zoneColor+'55':cardBorder}`,
+          borderRadius:'var(--d2c-r-md)', padding:'14px 16px', cursor:'pointer',
+          position:'relative', overflow:'hidden',
+          transform:hov?'translateY(-2px) scale(1.005)':'none',
+          boxShadow:hov?`0 8px 32px ${zoneColor}15, 0 0 0 1px ${zoneColor}22`:'0 1px 4px rgba(0,0,0,0.04)',
+          transition:'all 0.22s cubic-bezier(0.34,1.2,0.64,1)',
+          animation:'d2c-fadein 0.35s ease both', animationDelay:`${index*60}ms` }}>
+        <div style={{ position:'absolute', top:0, left:0, width:3, height:'100%',
+          background:`linear-gradient(180deg,${zoneColor},transparent)`, borderRadius:'0 2px 2px 0' }} />
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
+          <div style={{ flex:1, minWidth:0, paddingLeft:6 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+              <span style={{fontSize:17}}>{thread.emoji}</span>
+              <span style={{ fontSize:15, fontWeight:700, color:textCol, lineHeight:1.3, fontFamily:"'Space Grotesk',sans-serif" }}>{thread.title}</span>
+            </div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:8 }}>
+              {thread.tags.map(t => <Pill key={t} label={`#${t}`} color={zoneColor} small />)}
+              {isHot && <Pill label="🔥 hot" color="var(--d2c-red)" glow small />}
+            </div>
+            <div style={{ fontSize:13, color:text2Col, fontStyle:'italic',
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>"{thread.lastMessage}"</div>
+          </div>
+          <AvatarStack names={thread.participants} size={26} />
+        </div>
+        <div style={{ marginTop:10, display:'flex', alignItems:'center', gap:8, paddingLeft:6 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+            <div style={{ width:7, height:7, borderRadius:'50%', background:zoneColor, boxShadow:`0 0 8px ${zoneColor}` }} />
+            <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:text3Col }}>{thread.active} active</span>
+          </div>
+          <span style={{ fontSize:10, color:text3Col }}>·</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:11, color:text3Col }}>{thread.ago}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // BOTTOM SHEET — + button is in the tab row beside 🔍, no FAB
+  // ─────────────────────────────────────────────────────────────────────
+  function BottomSheet({ threads, onSelect, snapState, setSnapState, darkMode, currentHour, onCreateThread }) {
+    const [tab, setTab] = React.useState('nearby');
+    const [search, setSearch] = React.useState('');
+
+    const filtered = threads.filter(t => {
+      if (tab === 'hot') return t.active > 10;
+      if (tab === 'foryou') return ['food','culture','outdoors'].includes(t.zone);
+      if (tab === 'search' && search) return t.title.toLowerCase().includes(search.toLowerCase()) || t.tags.some(tag => tag.includes(search.toLowerCase()));
+      return true;
+    });
+
+    const SNAPS = { collapsed: 118, half: '50%', full: '88%' };
+    const h = SNAPS[snapState];
+    const bg = darkMode ? 'rgba(10,10,18,0.96)' : 'rgba(255,255,255,0.97)';
+    const border = darkMode ? 'var(--d2c-border)' : 'rgba(0,0,0,0.08)';
+    const text2 = darkMode ? 'var(--d2c-text-2)' : '#555';
+    const text3 = darkMode ? 'var(--d2c-text-3)' : '#999';
+    const surfaceCol = darkMode ? 'var(--d2c-surface-2)' : '#F5F5F8';
+    const cardBorder = darkMode ? 'var(--d2c-border)' : 'rgba(0,0,0,0.06)';
+    const textCol = darkMode ? 'var(--d2c-text)' : '#111';
+
+    return (
+      <div style={{ position:'absolute', bottom:0, left:0, right:0, height:h,
+        background:bg, backdropFilter:'blur(24px)',
+        borderRadius:'22px 22px 0 0',
+        border:`1px solid ${border}`, borderBottom:'none',
+        transition:'height 0.4s cubic-bezier(0.32,0.72,0,1)',
+        display:'flex', flexDirection:'column', overflow:'hidden', zIndex:1001,
+        boxShadow: darkMode ? '0 -12px 60px rgba(0,0,0,0.6)' : '0 -8px 40px rgba(0,0,0,0.08)' }}>
+
+        {/* Drag handle */}
+        <div style={{ padding:'10px 0 6px', cursor:'pointer', flexShrink:0, userSelect:'none' }}
+          onClick={() => setSnapState(s => s==='collapsed'?'half':s==='half'?'full':'collapsed')}>
+          <div style={{ width:36, height:4, borderRadius:2,
+            background: darkMode ? 'linear-gradient(90deg,var(--d2c-violet),var(--d2c-pink))' : 'rgba(0,0,0,0.15)',
+            margin:'0 auto', opacity: darkMode ? 0.5 : 1 }} />
+        </div>
+
+        {/* Header */}
+        <div style={{ padding:'0 14px 10px', flexShrink:0 }}>
+          {snapState !== 'collapsed' && (
+            <AggregateStats zones={MAP_ZONES} currentHour={currentHour} darkMode={darkMode} />
+          )}
+
+          {/* Tabs row — + button at the end, beside search */}
+          <div style={{ display:'flex', gap:5, alignItems:'center', overflow:'auto', scrollbarWidth:'none' }}>
+            {[
+              { id:'nearby', l:'🗺 nearby' },
+              { id:'hot',    l:'🔥 hot' },
+              { id:'foryou', l:'✨ for you' },
+              { id:'search', l:'🔍' },
+            ].map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ padding:'6px 14px', borderRadius:'var(--d2c-r-full)',
+                  background: tab===t.id ? 'var(--d2c-violet)' : surfaceCol,
+                  color: tab===t.id ? '#fff' : text2,
+                  border: tab===t.id ? 'none' : `1px solid ${cardBorder}`,
+                  fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.18s',
+                  fontFamily:"'Space Grotesk',sans-serif", whiteSpace:'nowrap',
+                  boxShadow: tab===t.id ? '0 0 16px var(--d2c-violet-glow)' : 'none' }}>
+                {t.l}
+              </button>
+            ))}
+
+            {/* ── + CREATE THREAD button — placed beside search ── */}
+            <button onClick={onCreateThread}
+              title="Start a thread"
+              style={{ marginLeft:'auto', flexShrink:0,
+                width:34, height:34, borderRadius:'50%',
+                background:'linear-gradient(135deg,var(--d2c-violet),var(--d2c-pink))',
+                border:'none', color:'#fff', fontSize:20, fontWeight:300, cursor:'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                boxShadow:'0 0 18px var(--d2c-violet-glow)',
+                transition:'transform 0.15s, box-shadow 0.15s',
+                fontFamily:'inherit' }}
+              onPointerDown={e => e.currentTarget.style.transform='scale(0.88)'}
+              onPointerUp={e => e.currentTarget.style.transform='scale(1)'}
+              onPointerLeave={e => e.currentTarget.style.transform='scale(1)'}>
+              +
+            </button>
+          </div>
+
+          {/* Search input (appears when search tab active) */}
+          {tab === 'search' && (
+            <input autoFocus placeholder="search threads, places…" value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ marginTop:8, width:'100%', background:surfaceCol,
+                border:`1px solid ${cardBorder}`, borderRadius:'var(--d2c-r-md)',
+                padding:'9px 14px', color:textCol, fontSize:13,
+                fontFamily:"'DM Sans',sans-serif", outline:'none' }} />
+          )}
+        </div>
+
+        {/* Thread list */}
+        <div style={{ flex:1, overflowY:'auto', padding:'0 14px 40px', scrollbarWidth:'none' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {filtered.map((t, i) => (
+              <ThreadCard key={t.id} thread={t} index={i} onClick={() => onSelect(t)} darkMode={darkMode} />
+            ))}
+            {filtered.length === 0 && (
+              <div style={{ textAlign:'center', padding:'32px 0', color:text3, fontSize:13 }}>no threads here yet</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // CREATE THREAD SHEET
+  // ─────────────────────────────────────────────────────────────────────
+  function CreateThreadSheet({ onClose, onCreated, darkMode }) {
+    const [title, setTitle] = React.useState('');
+    const [type, setType] = React.useState('text');
+    const [tag, setTag] = React.useState('');
+    const [tags, setTags] = React.useState([]);
+    const bg = darkMode ? 'rgba(10,10,18,0.97)' : 'rgba(255,255,255,0.98)';
+    const border = darkMode ? 'var(--d2c-border)' : 'rgba(0,0,0,0.08)';
+    const surfaceCol = darkMode ? 'var(--d2c-surface-2)' : '#F5F5F8';
+    const textCol = darkMode ? 'var(--d2c-text)' : '#111';
+    const text2 = darkMode ? 'var(--d2c-text-2)' : '#555';
+    const text3 = darkMode ? 'var(--d2c-text-3)' : '#999';
+    const addTag = () => { if (tag.trim() && tags.length < 5) { setTags([...tags, tag.trim()]); setTag(''); } };
+    const TYPES = [{id:'text',icon:'💬',l:'Text'},{id:'poll',icon:'📊',l:'Poll'},{id:'qna',icon:'❓',l:'Q&A'},{id:'countdown',icon:'⏱',l:'Event'}];
+    return (
+      <div style={{ position:'absolute', inset:0, zIndex:2000,
+        display:'flex', flexDirection:'column', justifyContent:'flex-end',
+        background:'rgba(0,0,0,0.55)', backdropFilter:'blur(8px)' }}
+        onClick={onClose}>
+        <div onClick={e=>e.stopPropagation()} style={{ background:bg, backdropFilter:'blur(24px)',
+          borderRadius:'24px 24px 0 0', padding:'0 0 32px', border:`1px solid ${border}`,
+          boxShadow:'0 -24px 80px rgba(0,0,0,0.5)',
+          animation:'d2c-sheet-up 0.35s cubic-bezier(0.34,1.2,0.64,1)' }}>
+          <div style={{ padding:'12px 0 6px', cursor:'pointer' }} onClick={onClose}>
+            <div style={{ width:36, height:4, borderRadius:2,
+              background:'linear-gradient(90deg,var(--d2c-violet),var(--d2c-pink))',
+              margin:'0 auto', opacity:0.5 }} />
+          </div>
+          <div style={{ padding:'8px 18px 0' }}>
+            <div style={{ fontSize:16, fontWeight:700, color:textCol, fontFamily:"'Space Grotesk',sans-serif", marginBottom:16 }}>start a thread</div>
+            <textarea placeholder="what's happening?" value={title} onChange={e=>setTitle(e.target.value)} maxLength={120}
+              style={{ width:'100%', background:surfaceCol, border:`1px solid ${border}`,
+                borderRadius:'var(--d2c-r-md)', padding:'12px 14px', color:textCol,
+                fontSize:16, fontFamily:"'DM Sans',sans-serif", outline:'none',
+                resize:'none', height:72, lineHeight:1.5 }} />
+            <div style={{ textAlign:'right', fontSize:10, color:text3, fontFamily:"'JetBrains Mono',monospace", marginTop:2 }}>{title.length}/120</div>
+            <div style={{ display:'flex', gap:6, marginTop:12 }}>
+              {TYPES.map(t => (
+                <button key={t.id} onClick={() => setType(t.id)}
+                  style={{ flex:1, padding:'8px 4px', borderRadius:'var(--d2c-r-md)',
+                    background: type===t.id ? 'rgba(139,92,246,0.15)' : surfaceCol,
+                    border: type===t.id ? '1px solid rgba(139,92,246,0.5)' : `1px solid ${border}`,
+                    color: type===t.id ? 'var(--d2c-violet)' : text2,
+                    cursor:'pointer', transition:'all 0.18s', fontFamily:'inherit' }}>
+                  <div style={{fontSize:16}}>{t.icon}</div>
+                  <div style={{fontSize:10,fontWeight:600,marginTop:2,fontFamily:"'Space Grotesk',sans-serif"}}>{t.l}</div>
+                </button>
+              ))}
+            </div>
+            <div style={{ display:'flex', gap:6, marginTop:12, flexWrap:'wrap' }}>
+              {tags.map((t,i)=>(
+                <span key={i} onClick={()=>setTags(tags.filter((_,j)=>j!==i))}
+                  style={{ fontSize:11, padding:'3px 10px', borderRadius:'var(--d2c-r-full)',
+                    background:'rgba(139,92,246,0.15)', color:'var(--d2c-violet)',
+                    border:'1px solid rgba(139,92,246,0.3)', cursor:'pointer',
+                    display:'flex',alignItems:'center',gap:4 }}>#{t} ×</span>
+              ))}
+            </div>
+            {tags.length < 5 && (
+              <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                <input placeholder="add tag…" value={tag} onChange={e=>setTag(e.target.value)}
+                  onKeyDown={e=>{if(e.key==='Enter')addTag();}}
+                  style={{ flex:1, background:surfaceCol, border:`1px solid ${border}`,
+                    borderRadius:'var(--d2c-r-md)', padding:'8px 12px', color:textCol,
+                    fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none' }} />
+                <button onClick={addTag}
+                  style={{ padding:'8px 14px', borderRadius:'var(--d2c-r-md)',
+                    background:'rgba(139,92,246,0.15)', color:'var(--d2c-violet)',
+                    border:'1px solid rgba(139,92,246,0.3)', cursor:'pointer',
+                    fontSize:13, fontWeight:600, fontFamily:'inherit' }}>+</button>
+              </div>
+            )}
+            <button onClick={() => { if(title.trim()) onCreated({title,type,tags}); }}
+              disabled={!title.trim()}
+              style={{ width:'100%', marginTop:16, height:48,
+                background: title.trim() ? 'linear-gradient(135deg,var(--d2c-violet),var(--d2c-pink))' : surfaceCol,
+                border:'none', borderRadius:'var(--d2c-r-full)',
+                color: title.trim() ? '#fff' : text3,
+                fontSize:15, fontWeight:700, cursor: title.trim() ? 'pointer' : 'not-allowed',
+                transition:'all 0.2s',
+                boxShadow: title.trim() ? '0 0 24px var(--d2c-violet-glow)' : 'none',
+                fontFamily:"'Space Grotesk',sans-serif" }}>
+              create thread
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // MAP SCREEN — top bar with d2c indicator, no FAB
+  // ─────────────────────────────────────────────────────────────────────
+  function MapScreen({ onThreadSelect, darkMode, setDarkMode }) {
+    const [snapState, setSnapState] = React.useState('collapsed');
+    const [layers, setLayers] = React.useState({ food:true, nightlife:true, culture:true, outdoors:true, transit:true });
+    const [showAnalytics, setShowAnalytics] = React.useState(true);
+    const [currentHour, setCurrentHour] = React.useState(new Date().getHours());
+    const [selectedZone, setSelectedZone] = React.useState(null);
+    const [showCreate, setShowCreate] = React.useState(false);
+    // d2c: the thread the user has "locked in" to navigate toward
+    const [d2cTarget, setD2cTarget] = React.useState(null);
+
+    const visibleThreads = D2C_THREADS.filter(t => layers[t.zone]);
+
+    const handleZoneTap = React.useCallback(zone => setSelectedZone(zone), []);
+
+    const handleThreadSelect = React.useCallback(thread => {
+      setD2cTarget(thread);
+      onThreadSelect(thread);
+      setSnapState('half');
+    }, [onThreadSelect]);
+
+    // Compute d2c distance to target
+    const d2cDist = d2cTarget
+      ? haversineMeters(YOU_LAT, YOU_LNG, d2cTarget.lat, d2cTarget.lng)
+      : null;
+
+    const bg = darkMode ? 'rgba(10,10,18,0.85)' : 'rgba(255,255,255,0.90)';
+    const borderColor = darkMode ? 'rgba(42,42,64,0.5)' : 'rgba(0,0,0,0.06)';
+
+    return (
+      <div style={{ display:'flex', flexDirection:'column', height:'100%',
+        background: darkMode ? 'var(--d2c-bg)' : '#F5F5F8', position:'relative' }}>
+
+        {/* ── TOP BAR ── */}
+        <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:1002, height:54,
+          background: bg, backdropFilter:'blur(20px)',
+          borderBottom:`1px solid ${borderColor}`,
+          display:'flex', alignItems:'center', padding:'0 14px', gap:8,
+          justifyContent:'space-between' }}>
+
+          {/* Menu */}
+          <button style={{ background:'none', border:'none',
+            color: darkMode ? 'var(--d2c-text-2)' : '#666',
+            fontSize:20, cursor:'pointer', padding:8, fontFamily:'inherit', flexShrink:0 }}>☰</button>
+
+          {/* Center: logo + d2c indicator */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, flex:1, justifyContent:'center' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <div style={{ width:8, height:8, borderRadius:'50%',
+                background:'linear-gradient(135deg,var(--d2c-violet),var(--d2c-pink))',
+                boxShadow:'0 0 8px var(--d2c-violet-glow)' }} />
+              <span style={{ fontSize:17, fontWeight:700,
+                color: darkMode ? 'var(--d2c-text)' : '#111',
+                letterSpacing:'-0.03em', fontFamily:"'Space Grotesk',sans-serif" }}>d2c</span>
+            </div>
+
+            {/* d2c distance chip — appears when user taps a thread/locks in */}
+            {d2cTarget && d2cDist !== null && (
+              <div style={{
+                display:'flex', alignItems:'center', gap:4,
+                background: darkMode ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)',
+                border:'1px solid rgba(139,92,246,0.35)',
+                borderRadius:'var(--d2c-r-full)',
+                padding:'3px 9px',
+                animation:'d2c-d2c-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
+              }}>
+                <span style={{ fontSize:11, color:'var(--d2c-violet)',
+                  fontFamily:"'JetBrains Mono',monospace", fontWeight:700,
+                  letterSpacing:'-0.01em' }}>
+                  d2c: {formatD2c(d2cDist)}
+                </span>
+                <span style={{ fontSize:10, color:'var(--d2c-violet)', opacity:0.7 }}>↗</span>
+              </div>
+            )}
+          </div>
+
+          {/* Theme toggle */}
+          <button onClick={() => setDarkMode(!darkMode)}
+            style={{ width:38, height:38, borderRadius:'50%',
+              background: darkMode ? 'var(--d2c-surface-2)' : '#fff',
+              border:`1px solid ${darkMode?'var(--d2c-border)':'rgba(0,0,0,0.1)'}`,
+              display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer',
+              fontSize:18, transition:'all 0.3s', flexShrink:0,
+              boxShadow: darkMode ? 'none' : '0 1px 4px rgba(0,0,0,0.08)', fontFamily:'inherit' }}>
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+        </div>
+
+        {/* Map */}
+        <AnalyticsMap
+          darkMode={darkMode}
+          onThreadSelect={handleThreadSelect}
+          layers={showAnalytics ? layers : {food:false,nightlife:false,culture:false,outdoors:false,transit:false}}
+          currentHour={currentHour}
+          onZoneTap={handleZoneTap}
+        />
+
+        {/* Layer controls */}
+        <LayerControl layers={layers} setLayers={setLayers} darkMode={darkMode}
+          showAnalytics={showAnalytics} setShowAnalytics={setShowAnalytics} />
+
+        {/* Time slider */}
+        {showAnalytics && (
+          <TimeSlider value={currentHour} onChange={setCurrentHour} darkMode={darkMode} />
+        )}
+
+        {/* Bottom sheet — + button is inside the sheet's tab row */}
+        <BottomSheet
+          threads={visibleThreads}
+          onSelect={handleThreadSelect}
+          snapState={snapState}
+          setSnapState={setSnapState}
+          darkMode={darkMode}
+          currentHour={currentHour}
+          onCreateThread={() => setShowCreate(true)}
+        />
+
+        {/* Zone popover */}
+        {selectedZone && (
+          <ZonePopover zone={selectedZone} darkMode={darkMode} onClose={() => setSelectedZone(null)} />
+        )}
+
+        {/* Create thread sheet */}
+        {showCreate && (
+          <CreateThreadSheet
+            darkMode={darkMode}
+            onClose={() => setShowCreate(false)}
+            onCreated={data => {
+              setShowCreate(false);
+              // Show a toast or navigate — for prototype just close
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // CHAT SCREEN
+  // ─────────────────────────────────────────────────────────────────────
+  const CHAT_MESSAGES = [
+    { id:1, from:'BraveOtter', text:"yo who's at blue tokai rn", time:'2:41p', mine:false },
+    { id:2, from:'NeonFox', text:'been here since 10! corner booth near the espresso bar', time:'2:42p', mine:false },
+    { id:3, from:'me', text:'omw, 5 mins. save me a spot?', time:'2:43p', mine:true },
+    { id:4, from:'BraveOtter', text:"we're 4 already but big table free near the window", time:'2:43p', mine:false },
+    { id:5, type:'system', text:'QuietWolf joined' },
+    { id:6, from:'QuietWolf', text:'which floor is everyone on?', time:'2:44p', mine:false },
+    { id:7, from:'NeonFox', text:"ground floor, you'll see us", time:'2:44p', mine:false },
+    { id:8, type:'image', from:'BraveOtter', time:'2:45p', mine:false, caption:'the vibe rn ☕' },
+  ];
+
+  const INCOMING = [
+    { from:'QuietWolf', text:'ok I can see you guys 👋', delay:3500 },
+    { from:'BraveOtter', text:'the filter coffee today is absolutely insane', delay:8000 },
+    { from:'NeonFox', text:'monsoon rain + coffee = perfect combo honestly', delay:13000 },
+    { from:'StormCrow', text:'anyone want to split a cab to koramangala after?', delay:19000 },
+  ];
+
+  function ViewOnce({ caption }) {
+    const [state, setState] = React.useState('idle');
+    const [count, setCount] = React.useState(8);
+    const handleTap = () => {
+      if (state === 'idle') {
+        setState('revealing');
+        setTimeout(() => {
+          setState('counting');
+          let c = 8;
+          const iv = setInterval(() => {
+            c--; setCount(c);
+            if (c <= 0) { clearInterval(iv); setState('dissolving'); setTimeout(() => setState('viewed'), 900); }
+          }, 1000);
+        }, 800);
+      } else if (state === 'counting') {
+        setState('dissolving');
+        setTimeout(() => setState('viewed'), 800);
+      }
+    };
+    if (state === 'viewed') {
+      return (
+        <div style={{ width:180, height:100, borderRadius:'var(--d2c-r-md)',
+          background:'var(--d2c-surface-2)', border:'1px solid var(--d2c-border)',
+          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4 }}>
+          <span style={{fontSize:16,opacity:0.3}}>👁</span>
+          <span style={{fontSize:10,color:'var(--d2c-text-3)',fontFamily:"'JetBrains Mono',monospace"}}>viewed</span>
+        </div>
+      );
+    }
+    const revealed = state === 'revealing' || state === 'counting' || state === 'dissolving';
+    const circ = 2 * Math.PI * 42;
+    return (
+      <div onClick={handleTap} style={{ width:200, height:180, position:'relative',
+        cursor:state==='idle'?'pointer':'default', borderRadius:'var(--d2c-r-md)', overflow:'hidden' }}>
+        <div style={{ position:'absolute', inset:0,
+          background:'linear-gradient(135deg,#1a1028 0%,#0d1b2a 40%,#16213e 70%,#2a1040 100%)' }}>
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'35%', background:'rgba(139,90,43,0.2)' }}/>
+          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <span style={{fontSize:36,opacity:0.5}}>☕</span>
+          </div>
+        </div>
+        {[{top:0,left:0,w:'50%',h:'50%',origin:'100% 100%'},{top:0,right:0,w:'50%',h:'50%',origin:'0% 100%'},
+          {bottom:0,left:0,w:'50%',h:'50%',origin:'100% 0%'},{bottom:0,right:0,w:'50%',h:'50%',origin:'0% 0%'}].map((p,i) => (
+          <div key={i} style={{ position:'absolute', top:p.top, left:p.left, right:p.right, bottom:p.bottom,
+            width:p.w, height:p.h, background:'var(--d2c-surface)', transformOrigin:p.origin,
+            transform:revealed?'perspective(300px) rotateY(90deg)':'none',
+            transition:revealed?`transform 0.4s cubic-bezier(0.34,1.2,0.64,1) ${i*0.15}s`:'none', zIndex:5 }}/>
+        ))}
+        <div style={{ position:'absolute', inset:0, backdropFilter:revealed?'blur(0px)':'blur(18px)',
+          transition:'backdrop-filter 0.5s', zIndex:3 }}/>
+        {state==='dissolving' && <div style={{ position:'absolute', inset:0, zIndex:10,
+          background:'var(--d2c-bg)', animation:'d2c-fadein 0.8s ease forwards' }}/>}
+        {state==='idle' && (
+          <div style={{ position:'absolute', inset:0, zIndex:10,
+            display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8,
+            background:'rgba(10,10,18,0.3)' }}>
+            <div style={{ width:44, height:44, borderRadius:'50%',
+              background:'rgba(139,92,246,0.2)', border:'1.5px solid rgba(139,92,246,0.4)',
+              display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(4px)' }}>
+              <span style={{fontSize:20}}>👁</span>
+            </div>
+            <span style={{ fontSize:11, fontWeight:600, color:'var(--d2c-text-2)', fontFamily:"'Space Grotesk',sans-serif" }}>view once</span>
+          </div>
+        )}
+        {state==='counting' && (
+          <div style={{ position:'absolute', top:8, right:8, zIndex:15 }}>
+            <svg width={32} height={32} style={{transform:'rotate(-90deg)'}}>
+              <circle cx={16} cy={16} r={13} fill="rgba(10,10,18,0.7)" stroke="rgba(255,255,255,0.1)" strokeWidth={2.5}/>
+              <circle cx={16} cy={16} r={13} fill="none" stroke="var(--d2c-orange)" strokeWidth={2.5}
+                strokeDasharray={circ} strokeDashoffset={circ*(1-count/8)} strokeLinecap="round"
+                style={{transition:'stroke-dashoffset 0.9s linear'}}/>
+            </svg>
+            <span style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:11, fontWeight:700, color:'#fff', fontFamily:"'JetBrains Mono',monospace" }}>{count}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function Bubble({ msg, showName }) {
+    const [showTime, setShowTime] = React.useState(false);
+    const color = vibeColor(msg.from);
+    if (msg.type === 'system') {
+      return (
+        <div style={{ textAlign:'center', padding:'8px 0' }}>
+          <span style={{ fontSize:11, color:'var(--d2c-text-3)',
+            background:'var(--d2c-surface-2)', padding:'3px 14px',
+            borderRadius:'var(--d2c-r-full)', border:'1px solid var(--d2c-border)',
+            fontFamily:"'DM Sans',sans-serif" }}>{msg.text}</span>
+        </div>
+      );
+    }
+    const isImage = msg.type === 'image';
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:msg.mine?'flex-end':'flex-start', marginBottom:2 }}>
+        {showName && !msg.mine && (
+          <span style={{ fontSize:11, fontWeight:700, marginBottom:3, marginLeft:4,
+            color, fontFamily:"'Space Grotesk',sans-serif" }}>{msg.from}</span>
+        )}
+        <div
+          onPointerEnter={() => setShowTime(true)} onPointerLeave={() => setShowTime(false)}
+          style={{ maxWidth:isImage?'auto':'78%',
+            background: isImage ? 'none' : msg.mine
+              ? 'linear-gradient(135deg,rgba(139,92,246,0.22),rgba(255,60,172,0.12))'
+              : 'var(--d2c-surface)',
+            border: isImage ? 'none' : msg.mine
+              ? '1px solid rgba(139,92,246,0.3)' : '1px solid var(--d2c-border)',
+            borderRadius: msg.mine ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
+            padding: isImage ? 0 : '10px 14px',
+            fontSize:14, color:'var(--d2c-text)', lineHeight:1.55,
+            fontFamily:"'DM Sans',sans-serif",
+            boxShadow: msg.mine ? '0 2px 12px rgba(139,92,246,0.08)' : 'none' }}>
+          {isImage ? <ViewOnce caption={msg.caption} /> : msg.text}
+        </div>
+        {(showTime || msg.isLast) && msg.time && (
+          <span style={{ fontSize:10, color:'var(--d2c-text-3)', marginTop:2,
+            fontFamily:"'JetBrains Mono',monospace",
+            marginLeft:msg.mine?0:4, marginRight:msg.mine?4:0,
+            opacity:showTime?1:0.5, transition:'opacity 0.15s' }}>{msg.time}</span>
+        )}
+      </div>
+    );
+  }
+
+  function ChatScreen({ thread, onBack, darkMode }) {
+    const [messages, setMessages] = React.useState(CHAT_MESSAGES);
+    const [input, setInput] = React.useState('');
+    const [isTyping, setIsTyping] = React.useState(false);
+    const [typingName, setTypingName] = React.useState('');
+    const [toast, setToast] = React.useState({ visible:false, msg:'', type:'info' });
+    const listRef = React.useRef(null);
+
+    const scrollBottom = () => { if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight; };
+    React.useEffect(() => { scrollBottom(); }, [messages]);
+
+    React.useEffect(() => {
+      const timers = INCOMING.map((inc, i) => {
+        const t1 = setTimeout(() => { setTypingName(inc.from); setIsTyping(true); }, inc.delay - 1500);
+        const t2 = setTimeout(() => {
+          setIsTyping(false);
+          setMessages(p => [...p, { id:Date.now()+i, from:inc.from, text:inc.text,
+            time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}).replace(' ','').toLowerCase(),
+            mine:false }]);
+        }, inc.delay);
+        return [t1, t2];
+      });
+      return () => timers.flat().forEach(clearTimeout);
+    }, []);
+
+    const send = () => {
+      if (!input.trim()) return;
+      setMessages(p => [...p, { id:Date.now(), from:'me', text:input.trim(),
+        time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}).replace(' ','').toLowerCase(),
+        mine:true }]);
+      setInput('');
+    };
+
+    const t = thread || D2C_THREADS[0];
+    const zoneColor = ZONE_COLORS[t.zone] || '#8B5CF6';
+
+    return (
+      <div style={{ display:'flex', flexDirection:'column', height:'100%', background:'var(--d2c-bg)', position:'relative' }}>
+        <Toast2 visible={toast.visible} message={toast.msg} type={toast.type} />
+        {/* Header */}
+        <div style={{ height:62, padding:'0 12px', flexShrink:0,
+          background:'rgba(10,10,18,0.9)', backdropFilter:'blur(20px)',
+          borderBottom:`1px solid ${zoneColor}22`,
+          display:'flex', alignItems:'center', gap:10 }}>
+          <button onClick={onBack} style={{ background:'none', border:'none',
+            color:'var(--d2c-violet)', fontSize:22, cursor:'pointer', padding:'4px 8px',
+            fontFamily:'inherit', display:'flex', alignItems:'center' }}>←</button>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{fontSize:16}}>{t.emoji}</span>
+              <span style={{ fontSize:15, fontWeight:700, color:'var(--d2c-text)',
+                fontFamily:"'Space Grotesk',sans-serif",
+                overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
+              <div style={{ width:6, height:6, borderRadius:'50%', background:zoneColor, boxShadow:`0 0 6px ${zoneColor}` }}/>
+              <span style={{ fontSize:11, color:'var(--d2c-text-3)', fontFamily:"'JetBrains Mono',monospace" }}>{t.active} active</span>
+              <Pill label={t.zone} color={zoneColor} small />
+            </div>
+          </div>
+          <button style={{ background:'none', border:'none', color:'var(--d2c-text-3)', fontSize:20, cursor:'pointer', padding:6, fontFamily:'inherit' }}>⋯</button>
+        </div>
+        <div style={{ height:2, flexShrink:0, background:`linear-gradient(90deg,transparent,${zoneColor}44,transparent)` }}/>
+        {/* Messages */}
+        <div ref={listRef} style={{ flex:1, overflowY:'auto', padding:'14px 14px 8px',
+          display:'flex', flexDirection:'column', gap:6, scrollbarWidth:'none' }}>
+          {messages.map((msg,i) => {
+            const prev = messages[i-1];
+            const showName = !msg.mine && (!prev || prev.from !== msg.from || prev.type === 'system');
+            return <Bubble key={msg.id} msg={{...msg, isLast:i===messages.length-1}} showName={showName} />;
+          })}
+          {isTyping && <TypingDots name={typingName} />}
+        </div>
+        {/* Composer */}
+        <div style={{ padding:'10px 12px 16px', borderTop:'1px solid var(--d2c-border)',
+          background:'rgba(10,10,18,0.95)', flexShrink:0 }}>
+          <div style={{ display:'flex', gap:8, alignItems:'flex-end',
+            background:'var(--d2c-surface-2)', borderRadius:'var(--d2c-r-lg)',
+            border:'1px solid var(--d2c-border)', padding:'8px 8px 8px 14px' }}>
+            <button style={{ background:'none', border:'none', color:'var(--d2c-text-3)',
+              fontSize:18, cursor:'pointer', padding:4, flexShrink:0, fontFamily:'inherit' }}>📎</button>
+            <textarea value={input}
+              onChange={e => { setInput(e.target.value); e.target.style.height='auto'; e.target.style.height=Math.min(e.target.scrollHeight,100)+'px'; }}
+              onKeyDown={e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder="type a message…" rows={1}
+              style={{ flex:1, background:'none', border:'none', resize:'none',
+                color:'var(--d2c-text)', fontSize:14, fontFamily:"'DM Sans',sans-serif",
+                outline:'none', maxHeight:100, lineHeight:1.5, scrollbarWidth:'none' }}/>
+            <button onClick={send}
+              style={{ width:38, height:38, borderRadius:'50%', flexShrink:0,
+                background: input.trim() ? 'linear-gradient(135deg,var(--d2c-violet),var(--d2c-pink))' : 'var(--d2c-surface-3)',
+                border:'none', color: input.trim() ? '#fff' : 'var(--d2c-text-3)', fontSize:16,
+                cursor: input.trim() ? 'pointer' : 'default', transition:'all 0.2s',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                boxShadow: input.trim() ? '0 0 16px var(--d2c-violet-glow)' : 'none',
+                fontFamily:'inherit' }}>➤</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // APP ROOT
+  // ─────────────────────────────────────────────────────────────────────
+  function App() {
+    const [screen, setScreen] = React.useState('map');
+    const [selectedThread, setSelectedThread] = React.useState(null);
+    const [darkMode, setDarkMode] = React.useState(true);
+
+    return (
+      <div style={{ width:'100%', height:'100%', position:'relative',
+        fontFamily:"'DM Sans',sans-serif", overflow:'hidden',
+        background: darkMode ? 'var(--d2c-bg)' : '#F5F5F8',
+        color: darkMode ? 'var(--d2c-text)' : '#111' }}>
+        <D2CStyles />
+        {screen === 'map' && (
+          <MapScreen
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+            onThreadSelect={t => { setSelectedThread(t); setScreen('chat'); }}
+          />
+        )}
+        {screen === 'chat' && (
+          <ChatScreen
+            thread={selectedThread}
+            onBack={() => setScreen('map')}
+            darkMode={darkMode}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+  </script>
+
+  <script>
+    function updateClock() {
+      const el = document.getElementById('status-time');
+      if (el) { const n=new Date(); el.textContent=`${n.getHours()%12||12}:${String(n.getMinutes()).padStart(2,'0')}`; }
+    }
+    updateClock(); setInterval(updateClock, 10000);
+  </script>
+</body>
+</html>

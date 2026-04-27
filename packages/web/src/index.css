@@ -1,0 +1,210 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  background: var(--d2c-bg);
+  color: var(--d2c-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ──────────────────────────────────────────────
+   Scrollbar
+   ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--d2c-border); border-radius: var(--d2c-r-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--d2c-text-3); }
+
+/* ──────────────────────────────────────────────
+   d2c keyframes (from d2c.html)
+   ────────────────────────────────────────────── */
+@keyframes d2c-fadein {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes d2c-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-5px); opacity: 1; }
+}
+@keyframes d2c-pulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+  100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
+}
+@keyframes d2c-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.25; }
+  50% { transform: scale(1.5); opacity: 0.1; }
+}
+@keyframes d2c-sheet-up {
+  from { transform: translateY(60px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes d2c-slide-in {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes d2c-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes d2c-zone-pulse {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.22; }
+}
+@keyframes d2c-spin { to { transform: rotate(360deg); } }
+@keyframes d2c-d2c-pop {
+  0% { transform: scale(0.7) translateY(4px); opacity: 0; }
+  60% { transform: scale(1.08) translateY(-1px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Legacy keyframes still referenced by chat components */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes pulse-dot { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+@keyframes pin-pulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(2.8); opacity: 0; } }
+@keyframes you-breathe { 0%, 100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(1.6); opacity: 0.15; } }
+@keyframes d2c-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-slide-up { animation: slideUp 200ms ease-out forwards; }
+.animate-shimmer {
+  background: linear-gradient(90deg, var(--d2c-surface) 25%, var(--d2c-surface-2) 50%, var(--d2c-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ──────────────────────────────────────────────
+   Leaflet overrides
+   ────────────────────────────────────────────── */
+.leaflet-container {
+  background: #0a0a16 !important;
+  font-family: 'DM Sans', sans-serif;
+}
+.leaflet-control-attribution { display: none !important; }
+.leaflet-tile-pane { will-change: transform; }
+
+:root.light .leaflet-container {
+  background: #f5f5f8 !important;
+}
+
+/* ──────────────────────────────────────────────
+   Map pin (divIcon HTML uses these classes)
+   ────────────────────────────────────────────── */
+.d2c-pin-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.d2c-pin-core {
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--pin-color), color-mix(in srgb, var(--pin-color) 60%, black));
+  box-shadow: 0 0 14px var(--pin-color), 0 0 4px var(--pin-color);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 2;
+}
+.d2c-pin-hot-ring {
+  position: absolute; inset: -4px; border-radius: 50%;
+  border: 2px solid var(--pin-color);
+  animation: d2c-pulse 1.5s ease-out infinite;
+}
+.d2c-pin-pulse {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1.5px solid var(--pin-color);
+  animation: d2c-pulse 2.5s ease-out infinite;
+}
+.d2c-pin-pulse-2 { animation-delay: 0.8s; }
+.d2c-pin-label {
+  margin-top: 4px;
+  background: rgba(10, 10, 18, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid color-mix(in srgb, var(--pin-color) 30%, transparent);
+  border-radius: 20px;
+  padding: 2px 8px;
+  display: flex; align-items: center; gap: 3px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+.d2c-pin-emoji { font-size: 11px; }
+.d2c-pin-count { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; color: var(--pin-color); }
+
+/* You pin */
+.d2c-you-pin {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+}
+.d2c-you-ring {
+  position: absolute; width: 36px; height: 36px; border-radius: 50%;
+  background: #8b5cf6; opacity: 0.2;
+  animation: d2c-breathe 2s ease-in-out infinite;
+}
+.d2c-you-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #ff3cac);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.5);
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 2;
+}
+.d2c-you-inner { width: 5px; height: 5px; border-radius: 50%; background: #fff; }
+
+/* Zone label */
+.d2c-zone-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px; font-weight: 700;
+  padding: 3px 10px; border-radius: 12px;
+  border: 1px solid; white-space: nowrap;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.02em;
+}
+
+/* Floating analytics card */
+.d2c-floating-card {
+  min-width: 130px; border-radius: 10px; padding: 8px 10px;
+  backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--zone-color) 30%, transparent);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+}
+.d2c-floating-card:hover {
+  transform: scale(1.04);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px color-mix(in srgb, var(--zone-color) 20%, transparent);
+}
+.d2c-fc-header { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+.d2c-fc-dot { width: 7px; height: 7px; border-radius: 50%; }
+.d2c-fc-title { font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: -0.01em; }
+.d2c-fc-stats { display: flex; gap: 10px; margin-bottom: 6px; }
+.d2c-fc-stat { display: flex; flex-direction: column; }
+.d2c-fc-num { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; line-height: 1; }
+.d2c-fc-label { font-family: 'JetBrains Mono', monospace; font-size: 7px; color: rgba(160, 160, 190, 0.7); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+.d2c-fc-spark { display: block; }
+
+.d2c-zone-poly { transition: fill-opacity 0.3s; }
+.d2c-zone-poly:hover { fill-opacity: 0.25 !important; }
+
+/* Hide scrollbars on horizontal tab rows */
+.d2c-no-scrollbar::-webkit-scrollbar { display: none; }
+.d2c-no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }

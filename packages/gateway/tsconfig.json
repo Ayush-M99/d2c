@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "references": [
+    { "path": "../shared" },
+    { "path": "../services/session" },
+    { "path": "../services/geospace" },
+    { "path": "../services/thread" },
+    { "path": "../services/message" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"]
+}

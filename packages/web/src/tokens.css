@@ -1,0 +1,80 @@
+:root {
+  /* d2c palette — dark default */
+  --d2c-bg: #0a0a12;
+  --d2c-surface: #111119;
+  --d2c-surface-2: #1a1a26;
+  --d2c-surface-3: #222233;
+  --d2c-border: #2a2a40;
+  --d2c-border-glow: rgba(120, 90, 255, 0.25);
+
+  --d2c-violet: #8b5cf6;
+  --d2c-violet-glow: rgba(139, 92, 246, 0.35);
+  --d2c-cyan: #06d6a0;
+  --d2c-cyan-glow: rgba(6, 214, 160, 0.30);
+  --d2c-orange: #ff6b35;
+  --d2c-orange-glow: rgba(255, 107, 53, 0.30);
+  --d2c-pink: #ff3cac;
+  --d2c-pink-glow: rgba(255, 60, 172, 0.25);
+  --d2c-gold: #ffd166;
+  --d2c-gold-glow: rgba(255, 209, 102, 0.30);
+  --d2c-blue: #4cc9f0;
+  --d2c-blue-glow: rgba(76, 201, 240, 0.25);
+  --d2c-red: #ef4444;
+  --d2c-green: #10b981;
+
+  --d2c-text: #f0f0f8;
+  --d2c-text-2: #a0a0be;
+  --d2c-text-3: #606080;
+  --d2c-text-inv: #0a0a12;
+
+  --d2c-r-sm: 8px;
+  --d2c-r-md: 14px;
+  --d2c-r-lg: 22px;
+  --d2c-r-xl: 28px;
+  --d2c-r-full: 999px;
+
+  /* Aliases for legacy --color-* names already used in components */
+  --color-surface: var(--d2c-bg);
+  --color-surface-elevated: var(--d2c-surface);
+  --color-surface-overlay: var(--d2c-surface-2);
+  --color-surface-card: var(--d2c-surface);
+  --color-primary: var(--d2c-violet);
+  --color-primary-hover: #a78bfa;
+  --color-primary-glow: var(--d2c-violet-glow);
+  --color-accent: var(--d2c-cyan);
+  --color-accent-glow: var(--d2c-cyan-glow);
+  --color-pink: var(--d2c-pink);
+  --color-pink-glow: var(--d2c-pink-glow);
+  --color-text-primary: var(--d2c-text);
+  --color-text-secondary: var(--d2c-text-2);
+  --color-text-muted: var(--d2c-text-3);
+  --color-danger: var(--d2c-red);
+  --color-success: var(--d2c-green);
+  --color-warning: var(--d2c-gold);
+  --color-border: var(--d2c-border);
+  --color-border-focus: var(--d2c-violet);
+
+  --radius-sm: var(--d2c-r-sm);
+  --radius-md: var(--d2c-r-md);
+  --radius-lg: var(--d2c-r-lg);
+  --radius-xl: var(--d2c-r-xl);
+  --radius-full: var(--d2c-r-full);
+
+  --shadow-glow: 0 0 20px var(--d2c-violet-glow);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+}
+
+:root.light {
+  --d2c-bg: #f5f5f8;
+  --d2c-surface: #ffffff;
+  --d2c-surface-2: #f0f0f5;
+  --d2c-surface-3: #e8e8ee;
+  --d2c-border: rgba(0, 0, 0, 0.08);
+  --d2c-text: #111111;
+  --d2c-text-2: #555555;
+  --d2c-text-3: #999999;
+  --d2c-text-inv: #ffffff;
+}
