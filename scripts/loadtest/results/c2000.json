@@ -1,0 +1,44 @@
+{
+  "label": "c2000",
+  "config": {
+    "clients": 2000,
+    "threads": 5,
+    "sendersPerThread": 4,
+    "sendRate": 1,
+    "durationS": 30,
+    "rampBatch": 50,
+    "rampDelayMs": 150,
+    "gatewayUrl": "http://localhost:3000",
+    "redisUrl": "redis://localhost:6379",
+    "label": "c2000"
+  },
+  "connections": {
+    "requested": 2000,
+    "joined": 2000,
+    "peakConcurrent": 2000,
+    "connectErrors": 0,
+    "disconnectsDuringRun": 0,
+    "rampSeconds": 14,
+    "connectMsP50": 22,
+    "connectMsP95": 28
+  },
+  "messages": {
+    "sent": 580,
+    "rejected": 0,
+    "deliveries": 232000,
+    "expectedDeliveries": 232000,
+    "deliveryRatePct": 100,
+    "sendThroughputPerSec": 19.3,
+    "deliveryThroughputPerSec": 7733.3
+  },
+  "latencyMs": {
+    "samples": 232000,
+    "min": 3,
+    "p50": 72,
+    "p95": 124,
+    "p99": 139,
+    "max": 157,
+    "mean": 71.6
+  },
+  "ranAt": "2026-08-19T19:43:10.738Z"
+}

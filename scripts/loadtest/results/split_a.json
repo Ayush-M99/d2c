@@ -1,0 +1,44 @@
+{
+  "label": "split_a",
+  "config": {
+    "clients": 1000,
+    "threads": 3,
+    "sendersPerThread": 5,
+    "sendRate": 1,
+    "durationS": 30,
+    "rampBatch": 50,
+    "rampDelayMs": 150,
+    "gatewayUrl": "http://localhost:3000",
+    "redisUrl": "redis://localhost:6379",
+    "label": "split_a"
+  },
+  "connections": {
+    "requested": 1000,
+    "joined": 1000,
+    "peakConcurrent": 1000,
+    "connectErrors": 0,
+    "disconnectsDuringRun": 0,
+    "rampSeconds": 5.4,
+    "connectMsP50": 13,
+    "connectMsP95": 34
+  },
+  "messages": {
+    "sent": 435,
+    "rejected": 0,
+    "deliveries": 145000,
+    "expectedDeliveries": 145000,
+    "deliveryRatePct": 100,
+    "sendThroughputPerSec": 14.5,
+    "deliveryThroughputPerSec": 4833.3
+  },
+  "latencyMs": {
+    "samples": 145000,
+    "min": 3,
+    "p50": 39,
+    "p95": 70,
+    "p99": 78,
+    "max": 84,
+    "mean": 39.06
+  },
+  "ranAt": "2026-08-19T19:44:09.562Z"
+}

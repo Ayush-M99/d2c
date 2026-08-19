@@ -1,0 +1,44 @@
+{
+  "label": "f5_e",
+  "config": {
+    "clients": 1000,
+    "threads": 3,
+    "sendersPerThread": 5,
+    "sendRate": 1,
+    "durationS": 30,
+    "rampBatch": 50,
+    "rampDelayMs": 200,
+    "gatewayUrl": "http://localhost:3000",
+    "redisUrl": "redis://localhost:6379",
+    "label": "f5_e"
+  },
+  "connections": {
+    "requested": 1000,
+    "joined": 1000,
+    "peakConcurrent": 1000,
+    "connectErrors": 0,
+    "disconnectsDuringRun": 0,
+    "rampSeconds": 10.6,
+    "connectMsP50": 98,
+    "connectMsP95": 267
+  },
+  "messages": {
+    "sent": 435,
+    "rejected": 0,
+    "deliveries": 145000,
+    "expectedDeliveries": 145000,
+    "deliveryRatePct": 100,
+    "sendThroughputPerSec": 14.5,
+    "deliveryThroughputPerSec": 4833.3
+  },
+  "latencyMs": {
+    "samples": 145000,
+    "min": 4,
+    "p50": 43,
+    "p95": 74,
+    "p99": 86,
+    "max": 99,
+    "mean": 42.57
+  },
+  "ranAt": "2026-08-19T19:48:37.802Z"
+}

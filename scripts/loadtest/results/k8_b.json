@@ -1,0 +1,44 @@
+{
+  "label": "k8_b",
+  "config": {
+    "clients": 1000,
+    "threads": 3,
+    "sendersPerThread": 5,
+    "sendRate": 1,
+    "durationS": 30,
+    "rampBatch": 50,
+    "rampDelayMs": 250,
+    "gatewayUrl": "http://localhost:3000",
+    "redisUrl": "redis://localhost:6379",
+    "label": "k8_b"
+  },
+  "connections": {
+    "requested": 1000,
+    "joined": 1000,
+    "peakConcurrent": 1000,
+    "connectErrors": 0,
+    "disconnectsDuringRun": 0,
+    "rampSeconds": 17.3,
+    "connectMsP50": 197,
+    "connectMsP95": 495
+  },
+  "messages": {
+    "sent": 435,
+    "rejected": 0,
+    "deliveries": 145000,
+    "expectedDeliveries": 145000,
+    "deliveryRatePct": 100,
+    "sendThroughputPerSec": 14.5,
+    "deliveryThroughputPerSec": 4833.3
+  },
+  "latencyMs": {
+    "samples": 145000,
+    "min": 3,
+    "p50": 53,
+    "p95": 121,
+    "p99": 152,
+    "max": 169,
+    "mean": 60.25
+  },
+  "ranAt": "2026-08-19T19:47:29.751Z"
+}

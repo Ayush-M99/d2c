@@ -1,0 +1,44 @@
+{
+  "label": "k5_e",
+  "config": {
+    "clients": 1000,
+    "threads": 3,
+    "sendersPerThread": 5,
+    "sendRate": 1,
+    "durationS": 30,
+    "rampBatch": 50,
+    "rampDelayMs": 200,
+    "gatewayUrl": "http://localhost:3000",
+    "redisUrl": "redis://localhost:6379",
+    "label": "k5_e"
+  },
+  "connections": {
+    "requested": 1000,
+    "joined": 1000,
+    "peakConcurrent": 1000,
+    "connectErrors": 0,
+    "disconnectsDuringRun": 0,
+    "rampSeconds": 10.4,
+    "connectMsP50": 53,
+    "connectMsP95": 261
+  },
+  "messages": {
+    "sent": 435,
+    "rejected": 0,
+    "deliveries": 145000,
+    "expectedDeliveries": 145000,
+    "deliveryRatePct": 100,
+    "sendThroughputPerSec": 14.5,
+    "deliveryThroughputPerSec": 4833.3
+  },
+  "latencyMs": {
+    "samples": 145000,
+    "min": 3,
+    "p50": 42,
+    "p95": 72,
+    "p99": 82,
+    "max": 93,
+    "mean": 41.98
+  },
+  "ranAt": "2026-08-19T19:46:16.749Z"
+}

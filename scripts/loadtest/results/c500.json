@@ -1,0 +1,44 @@
+{
+  "label": "c500",
+  "config": {
+    "clients": 500,
+    "threads": 2,
+    "sendersPerThread": 5,
+    "sendRate": 1,
+    "durationS": 30,
+    "rampBatch": 50,
+    "rampDelayMs": 150,
+    "gatewayUrl": "http://localhost:3000",
+    "redisUrl": "redis://localhost:6379",
+    "label": "c500"
+  },
+  "connections": {
+    "requested": 500,
+    "joined": 500,
+    "peakConcurrent": 500,
+    "connectErrors": 0,
+    "disconnectsDuringRun": 0,
+    "rampSeconds": 2.6,
+    "connectMsP50": 24,
+    "connectMsP95": 31
+  },
+  "messages": {
+    "sent": 290,
+    "rejected": 0,
+    "deliveries": 72500,
+    "expectedDeliveries": 72500,
+    "deliveryRatePct": 100,
+    "sendThroughputPerSec": 9.7,
+    "deliveryThroughputPerSec": 2416.7
+  },
+  "latencyMs": {
+    "samples": 72500,
+    "min": 4,
+    "p50": 26,
+    "p95": 41,
+    "p99": 46,
+    "max": 53,
+    "mean": 25.84
+  },
+  "ranAt": "2026-08-19T19:41:11.696Z"
+}
