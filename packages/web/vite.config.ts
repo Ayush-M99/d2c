@@ -26,6 +26,18 @@ export default defineConfig({
       },
     },
   },
+  // Same proxy for `vite preview`, so a production build can be run against
+  // the local gateway without a separate reverse proxy.
+  preview: {
+    port: 4173,
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        ws: true,
+      },
+    },
+  },
   build: {
     rollupOptions: {
       output: {
